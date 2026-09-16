@@ -80,15 +80,15 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-md rounded-3xl bg-[#0b122c] border border-indigo-500/40 p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.8)] text-slate-100"
+        className="relative w-full max-w-md rounded-3xl bg-[#08110F] border border-[#294238] p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.8)] text-[#F2F7F3]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-2 rounded-xl text-[#AEBDB4] hover:text-[#F2F7F3] hover:bg-[#12211D] transition-colors cursor-pointer"
           title="Close dialog"
         >
           <X className="w-5 h-5" />
@@ -96,22 +96,22 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
 
         {/* Section Header: WHEN IS YOUR EXAM? */}
         <div className="mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#12211D] border border-[#294238] text-[#8FD3A2] text-xs font-bold uppercase tracking-wider mb-2">
+            <Clock className="w-3.5 h-3.5 text-[#8FD3A2]" />
             <span>Target Calibration</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-wide uppercase font-display">
+          <h2 className="text-xl sm:text-2xl font-black text-[#F2F7F3] tracking-wide uppercase font-display">
             WHEN IS YOUR EXAM?
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1">
+          <p className="text-xs sm:text-sm text-[#AEBDB4] mt-1">
             Choose your exact exam date and time to calibrate your live countdown and study sprints.
           </p>
         </div>
 
         {/* Error Notice */}
         {validationError && (
-          <div className="mb-4 p-3.5 rounded-xl bg-red-950/60 border border-red-500/50 flex items-start gap-2.5 text-red-200 text-xs animate-in fade-in">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <div className="mb-4 p-3.5 rounded-xl bg-[#0D1916] border border-[#F29B9B]/50 flex items-start gap-2.5 text-[#F29B9B] text-xs animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-[#F29B9B] shrink-0 mt-0.5" />
             <span className="font-medium">{validationError}</span>
           </div>
         )}
@@ -121,9 +121,9 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
           <div>
             <label 
               htmlFor="edit-exam-date-input" 
-              className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5"
+              className="block text-xs font-bold uppercase tracking-wider text-[#AEBDB4] mb-1.5 flex items-center gap-1.5"
             >
-              <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+              <Calendar className="w-3.5 h-3.5 text-[#8FD3A2]" />
               <span>Exam Date</span>
             </label>
             <input
@@ -134,7 +134,7 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
                 setExamDate(e.target.value);
                 setValidationError(null);
               }}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 hover:border-indigo-400 text-white font-medium text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 [color-scheme:dark] transition-colors cursor-pointer shadow-inner"
+              className="w-full px-4 py-3 rounded-xl bg-[#0D1916] border border-[#294238] hover:border-[#8FD3A2]/60 text-[#F2F7F3] font-medium text-sm focus:outline-none focus:border-[#8FD3A2] focus:ring-1 focus:ring-[#8FD3A2] [color-scheme:dark] transition-colors cursor-pointer shadow-inner"
               required
             />
           </div>
@@ -143,9 +143,9 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
           <div>
             <label 
               htmlFor="edit-exam-time-input" 
-              className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5"
+              className="block text-xs font-bold uppercase tracking-wider text-[#AEBDB4] mb-1.5 flex items-center gap-1.5"
             >
-              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+              <Clock className="w-3.5 h-3.5 text-[#8FD3A2]" />
               <span>Exam Time</span>
             </label>
             <input
@@ -156,7 +156,7 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
                 setExamTime(e.target.value);
                 setValidationError(null);
               }}
-              className="w-full px-4 py-3 rounded-xl bg-slate-900/90 border border-indigo-500/40 hover:border-indigo-400 text-white font-medium text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 [color-scheme:dark] transition-colors cursor-pointer shadow-inner"
+              className="w-full px-4 py-3 rounded-xl bg-[#0D1916] border border-[#294238] hover:border-[#8FD3A2]/60 text-[#F2F7F3] font-medium text-sm focus:outline-none focus:border-[#8FD3A2] focus:ring-1 focus:ring-[#8FD3A2] [color-scheme:dark] transition-colors cursor-pointer shadow-inner"
               required
             />
           </div>
@@ -165,26 +165,26 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
           {examDate && examTime && (
             <div className={`p-3.5 rounded-xl border transition-all text-xs ${
               isPast
-                ? 'bg-red-950/40 border-red-500/40 text-red-200'
-                : 'bg-indigo-950/60 border-indigo-500/40 text-indigo-200'
+                ? 'bg-[#0D1916] border-[#F29B9B]/40 text-[#F29B9B]'
+                : 'bg-[#12211D] border-[#294238] text-[#AEBDB4]'
             }`}>
               {isPast ? (
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-[#F29B9B] shrink-0" />
                   <span className="font-semibold">Exam time has passed. Please choose a future exam time.</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-slate-400 block text-[11px]">Selected Target:</span>
-                    <strong className="text-white font-semibold">
+                    <span className="text-[#7F9188] block text-[11px]">Selected Target:</span>
+                    <strong className="text-[#F2F7F3] font-semibold">
                       {formatExamDate(examDate, targetTs)} at {formatExamTime(examTime, targetTs)}
                     </strong>
                   </div>
                   {remaining && (
                     <div className="text-right">
-                      <span className="text-slate-400 block text-[11px]">Remaining:</span>
-                      <strong className="text-emerald-400 font-mono font-bold">
+                      <span className="text-[#7F9188] block text-[11px]">Remaining:</span>
+                      <strong className="text-[#9FE2B0] font-mono font-bold">
                         {remaining.hours}h {remaining.minutes}m {remaining.seconds}s
                       </strong>
                     </div>
@@ -199,16 +199,16 @@ export const EditExamTimeModal: React.FC<EditExamTimeModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-[#AEBDB4] hover:text-[#F2F7F3] hover:bg-[#12211D] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               id="set-exam-time-submit-btn"
               type="submit"
-              className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all flex items-center gap-2 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-[#08110F] bg-[#BFE8C8] hover:bg-[#D9F3DE] shadow-md transition-all flex items-center gap-2 cursor-pointer border border-[#8FD3A2]/40"
             >
-              <Check className="w-4 h-4 text-emerald-300 stroke-[3]" />
+              <Check className="w-4 h-4 text-[#08110F] stroke-[3]" />
               <span>Set Exam Time</span>
             </button>
           </div>

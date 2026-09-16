@@ -40,6 +40,108 @@ export interface YouTubeClassItem {
   watchUrl: string;
 }
 
+export interface TopicOverview {
+  topicName: string;
+  whatItIs: string;
+  whyImportant: string;
+  whereUsed: string;
+  quickSummary: string; // 3-5 line quick summary
+}
+
+export interface CompleteTheory {
+  definitions: string[];
+  importantConcepts: string[];
+  rulesAndProperties: string[];
+  characteristics: string[];
+  typesOrClassifications: { typeName: string; description: string }[];
+  workingPrinciple: string;
+  importantTerms: { term: string; definition: string }[];
+  relationships: string;
+}
+
+export interface TopicStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  detail?: string;
+}
+
+export interface TopicExampleItem {
+  title: string;
+  exampleType: 'programming' | 'mathematics' | 'algorithms' | 'dataStructures' | 'theory';
+  content: string;
+  explanation: string;
+}
+
+export interface CodeFormulaDiagram {
+  syntaxOrFormulas?: string;
+  codeOrEquations?: string;
+  pseudocodeOrDiagram?: string;
+  explanation: string;
+}
+
+export interface ExamImportantSection {
+  mustRemember: string[];
+  importantDefinitions: string[];
+  importantFormulas: string[];
+  importantSteps: string[];
+  importantDifferences: string[];
+  commonlyAskedConcepts: string[];
+}
+
+export interface HowToWriteInExam {
+  conceptTitle: string;
+  definition: string;
+  explanation: string;
+  example: string;
+  conclusion: string;
+}
+
+export interface ExpectedExamQuestion {
+  question: string;
+  answer: string;
+  difficulty: 'Easy' | 'Medium' | 'Difficult';
+  marks: 4 | 6 | 10;
+}
+
+export interface ExpectedExamQuestionsSection {
+  fourMarkQuestions: ExpectedExamQuestion[];
+  sixMarkQuestions: ExpectedExamQuestion[];
+  tenMarkQuestions: ExpectedExamQuestion[];
+}
+
+export interface ComparisonRow {
+  parameter: string;
+  conceptAValue: string;
+  conceptBValue: string;
+}
+
+export interface ImportantDifferencesTable {
+  conceptA: string;
+  conceptB: string;
+  rows: ComparisonRow[];
+}
+
+export interface CommonMistakeItem {
+  mistake: string;
+  correctUnderstanding: string;
+}
+
+export interface MemoryTrickItem {
+  mnemonic: string;
+  meaning: string;
+}
+
+export interface QuickCheckItem {
+  id: string;
+  type: 'mcq' | 'true_false' | 'short_answer';
+  question: string;
+  options?: string[];
+  correctOptionIndex?: number;
+  correctText?: string;
+  explanation: string;
+}
+
 export interface QuickCheckQuestion {
   id: string;
   question: string;
@@ -70,11 +172,33 @@ export interface TheoreticalStepByStep {
   examPoints: string[];
 }
 
-export interface TopicLearningContent {
+export interface FullTopicLearningPage {
   topicName: string;
-  topicType: 'programming' | 'mathematical' | 'theoretical';
-  simpleSummary: {
+  topicType?: 'programming' | 'mathematics' | 'algorithms' | 'dataStructures' | 'theory';
+  overview: TopicOverview;
+  completeTheory: CompleteTheory;
+  stepByStep: TopicStep[];
+  examples: TopicExampleItem[];
+  codeFormulaDiagram: CodeFormulaDiagram;
+  examImportant: ExamImportantSection;
+  howToWriteInExam: HowToWriteInExam;
+  expectedExamQuestions: ExpectedExamQuestionsSection;
+  importantDifferences?: ImportantDifferencesTable;
+  commonMistakes: CommonMistakeItem[];
+  quickRevision: {
+    keyPoints: string[];
+  };
+  memoryTricks?: MemoryTrickItem[];
+  quickCheckQuestions: QuickCheckItem[];
+  youtubeClasses: YouTubeClassItem[];
+  isSimplerVersion?: boolean;
+}
+
+export interface TopicLearningContent extends FullTopicLearningPage {
+  // Backwards compatibility wrappers
+  simpleSummary?: {
     whatItIs: string;
+    whatItMeans?: string;
     whyItIsUsed: string;
     howItWorks: string;
     importantRules: string[];
@@ -82,30 +206,29 @@ export interface TopicLearningContent {
     documentPoints: string[];
     simpleExample: string;
     commonExamMistakes: string[];
+    shortExamTip?: string;
   };
-  stepByStep: {
-    programming?: ProgrammingStepByStep;
-    mathematical?: MathematicalStepByStep;
-    theoretical?: TheoreticalStepByStep;
-  };
-  examReadySection: {
-    learningOutcomes: string[];
-    mostImportantExamPoints: string[];
-  };
-  youtubeClasses: YouTubeClassItem[];
-  quickCheckQuestions: QuickCheckQuestion[];
-  isSimplerVersion?: boolean;
+  stepByStepExplanation?: { title: string; explanation: string }[];
+  example?: { title: string; codeOrMath: string; walkthrough: string };
+  examPoints?: string[];
+  quickCheck?: { id: string; question: string; options: string[]; correctIndex: number; explanation: string }[];
 }
 
 export interface TopicUnderstandingCalculation {
-  score: number; // 0..100
-  status: 'NOT_STARTED' | 'LEARNING' | 'UNDERSTOOD' | 'WEAK';
+  score: number; // 0..100 (never automatically 100%)
+  status: 'STRONG' | 'NEEDS_REVISION' | 'WEAK' | 'NOT_STARTED' | 'LEARNING' | 'UNDERSTOOD';
   statusLabel: string;
+  statusBadge: string; // '🟢 Strong Understanding' | '🟡 Needs Revision' | '🔴 Weak Understanding'
   statusColor: string;
   diagnostic: string;
   quizAccuracy?: number;
   quickCheckAccuracy?: number;
+  questionsAttempted: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  recommendedRevisionTime: number; // in minutes
   userMarkedUnderstood: boolean;
+  userMarkedConfused?: boolean;
 }
 
 export interface QuizQuestion {
@@ -146,15 +269,19 @@ export interface TopicPerformance {
   isRescheduled?: boolean;
   recommendedMinutes?: number;
   priority?: PriorityLevel;
+  accuracyBefore?: number;
+  accuracyAfter?: number;
 }
 
 export interface CrashLesson {
   topicName: string;
   summary: string;
   keyPoints: string[];
+  importantSteps?: string[];
   formulaOrRule?: string;
   smallExample: string;
   examTip: string;
+  commonMistake?: string;
 }
 
 export interface QuizSessionReport {

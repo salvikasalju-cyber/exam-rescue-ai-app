@@ -497,9 +497,11 @@ Topic Context: ${JSON.stringify(topicContext)}
 Generate a high-yield, concise, exam-focused crash lesson with:
 1. "summary": Simple 2-3 sentence explanation cutting straight to the intuition without filler.
 2. "keyPoints": 3 to 4 short, actionable bullet points that frequently appear on exam rubrics.
-3. "formulaOrRule": The critical formula, rule, decision procedure, or algorithmic step sequence (or "Core Exam Rule" if qualitative).
-4. "smallExample": A brief, concrete scenario, code snippet, or miniature step-by-step calculation demonstrating how to solve a typical problem.
-5. "examTip": An essential exam tip highlighting a trap, common mistake, or scoring trick.
+3. "importantSteps": 2-4 critical sequential steps to solve or apply this topic.
+4. "formulaOrRule": The critical formula, rule, decision procedure, or algorithmic step sequence (or "Core Exam Rule" if qualitative).
+5. "smallExample": A brief, concrete scenario, code snippet, or miniature step-by-step calculation demonstrating how to solve a typical problem.
+6. "examTip": An essential exam tip highlighting scoring points and exam hall best practices.
+7. "commonMistake": The exact common mistake or trap where students lose marks on this topic.
 
 Keep it strictly short, high-yield, and focused on earning exam points.`;
 
@@ -526,11 +528,16 @@ Keep it strictly short, high-yield, and focused on earning exam points.`;
                     type: Type.ARRAY,
                     items: { type: Type.STRING },
                   },
+                  importantSteps: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
                   formulaOrRule: { type: Type.STRING },
                   smallExample: { type: Type.STRING },
                   examTip: { type: Type.STRING },
+                  commonMistake: { type: Type.STRING },
                 },
-                required: ['topicName', 'summary', 'keyPoints', 'formulaOrRule', 'smallExample', 'examTip'],
+                required: ['topicName', 'summary', 'keyPoints', 'importantSteps', 'formulaOrRule', 'smallExample', 'examTip', 'commonMistake'],
               },
             },
           });
@@ -558,9 +565,15 @@ Keep it strictly short, high-yield, and focused on earning exam points.`;
               topicName: parsed.topicName || topicName,
               summary: parsed.summary,
               keyPoints: parsed.keyPoints,
+              importantSteps: Array.isArray(parsed.importantSteps) ? parsed.importantSteps : [
+                '1. Identify given inputs and boundary conditions',
+                '2. Apply the core formula or mechanism sequentially',
+                '3. Verify edge cases and format final exam answer'
+              ],
               formulaOrRule: parsed.formulaOrRule || 'Core Principle Rule',
               smallExample: parsed.smallExample,
-              examTip: parsed.examTip
+              examTip: parsed.examTip,
+              commonMistake: parsed.commonMistake || 'Confusing definitions or missing edge conditions during calculation.'
             });
           }
         } catch (parseErr) {
@@ -577,9 +590,15 @@ Keep it strictly short, high-yield, and focused on earning exam points.`;
           `Identify the input conditions and expected outputs or state transformations.`,
           topicContext.reason ? `Key exam context: ${topicContext.reason}` : `Memorize the standard trade-offs and edge cases.`
         ],
+        importantSteps: [
+          '1. State the exact academic definition in 1-2 sentences.',
+          '2. Formulate the core rule, equation, or algorithm.',
+          '3. Provide a minimal illustrative walkthrough or calculation.'
+        ],
         formulaOrRule: topicContext.difficulty ? `Standard Procedure for ${topicContext.difficulty}-tier problems` : `Key Rule: Verify boundary conditions before execution.`,
         smallExample: `Problem: Apply ${topicName} to standard input.\nSolution: Isolate the core parameters, apply the verified rule step-by-step, and double-check edge conditions.`,
-        examTip: `Beware of confusing ${topicName} with adjacent topics. Always write down the core definition on your scratch paper first.`
+        examTip: `Beware of confusing ${topicName} with adjacent topics. Always write down the core definition on your scratch paper first.`,
+        commonMistake: `Writing vague generic descriptions instead of precise keywords and definitions.`
       });
 
     } catch (err: any) {
@@ -588,7 +607,7 @@ Keep it strictly short, high-yield, and focused on earning exam points.`;
     }
   });
 
-  // API: Complete Topic Learning Center Generator
+  // API: Complete Topic Learning Center Generator (Full Exam-Based Topic Explanation)
   app.post('/api/learn-topic', async (req, res) => {
     try {
       const {
@@ -609,19 +628,32 @@ Keep it strictly short, high-yield, and focused on earning exam points.`;
       const ai = getGenAI();
       const detectedMime = mimeType || 'application/pdf';
 
-      let prompt = `You are an expert master tutor and professor creating a comprehensive, high-yield "TOPIC LEARNING CENTER" lesson for an upcoming emergency exam.
+      let prompt = `You are an expert master tutor and professor creating a COMPLETE EXAM-BASED STUDY PAGE for an upcoming emergency exam.
 Topic: "${topicName}"
 Course/Subject: "${courseName}"
 Document Title: "${documentTitle}"
 Topic Metadata Context: ${JSON.stringify(topicContext)}
 
 CRITICAL ACCURACY & GROUNDING RULES:
-1. Ground the explanation, rules, examples, and points strictly in the subject of "${topicName}" and the uploaded course materials.
-2. If this topic is from computer science or programming, explain the programming concept with a clear code example, line-by-line explanation, expected output, and why the output occurs.
-3. If this topic is mathematical or physical, provide the formula, explain all variables, and solve one example step by step.
-4. If this topic is theoretical or conceptual, provide the rubric definition, key characteristics, working principle, practical example, and key exam points.
-5. Provide 2 to 3 SPECIFIC, HIGHLY RELEVANT YouTube class recommendations specifically for "${topicName}" (e.g. search query "${topicName} tutorial beginner", "${topicName} exam review"). Each must have title, channelName, description, and searchQuery.
-6. Provide 2 to 3 "Quick Check" multiple choice questions with 4 options, the correctOptionIndex (0-3), and clear explanatory feedback.
+1. Ground every explanation, formula, code, example, and expected exam question STRICTLY in "${topicName}" and the uploaded course materials.
+2. Do NOT invent topics or syllabus material not present in the study material.
+3. Cover the topic completely from fundamentals to advanced points, but explain in clear, student-friendly language.
+4. Structure the content so it is optimal for both rapid learning and writing high-scoring exam answers.
+5. Create all required sections:
+   - TOPIC OVERVIEW (what it is, why important, where used, 3-5 line summary)
+   - COMPLETE THEORY (definitions, concepts, rules, properties, characteristics, classifications, working principle, important terms, relationships)
+   - STEP-BY-STEP EXPLANATION (Step 1, Step 2, Step 3... with clear descriptions)
+   - EXAMPLES (concrete code, mathematical derivations, algorithm steps, or practical examples)
+   - CODE / FORMULA / DIAGRAM (syntax, code snippets, equations, pseudocode, and ASCII diagrams with detailed explanation)
+   - ⭐ EXAM IMPORTANT (must remember, definitions, formulas, steps, differences, commonly asked concepts)
+   - HOW TO WRITE IN THE EXAM (marks-based answer structure: Definition, Explanation, Example, Conclusion)
+   - EXPECTED EXAM QUESTIONS (4-mark, 6-mark, and 10-mark questions with full exam-ready answers, marked Easy/Medium/Difficult)
+   - IMPORTANT DIFFERENCES (comparison table with Concept A vs Concept B across parameters)
+   - COMMON MISTAKES (❌ common mistake vs ✅ correct understanding)
+   - 2-MINUTE REVISION (high-yield bullet summary)
+   - MEMORY TRICKS (simple mnemonics)
+   - QUICK CHECK (3-5 questions: MCQs, True/False, and short-answer with explanations)
+   - YOUTUBE CLASSES (2-3 exact topic class recommendations with titles and search queries)
 `;
 
       if (simplerMode) {
@@ -629,14 +661,12 @@ CRITICAL ACCURACY & GROUNDING RULES:
 STUDENT IS CURRENTLY CONFUSED:
 The student clicked "[ Still Confused ]". Explain "${topicName}" in an EVEN SIMPLER, beginner-friendly way.
 - Use an intuitive real-world analogy (e.g. daily life, blueprint, factory, or visual metaphor).
-- Use a completely DIFFERENT example than before. Previous explanation: "${previousExplanation.slice(0, 300)}...".
-- Avoid repeating the previous explanation words.
-- Make the step-by-step breakdown extraordinarily easy to follow.
+- Use a completely DIFFERENT simple example than before. Previous explanation: "${previousExplanation.slice(0, 300)}...".
+- Break complex concepts into tiny, digestible steps without omitting core exam facts.
 `;
       }
 
       const contents: any[] = [];
-      // If client sent the uploaded PDF base64, attach it so Gemini grounds the lesson strictly in the actual document!
       if (fileData && typeof fileData === 'string' && fileData.length > 50) {
         contents.push({
           inlineData: {
@@ -659,10 +689,7 @@ The student clicked "[ Still Confused ]". Explain "${topicName}" in an EVEN SIMP
             model: modelCandidate,
             contents,
             config: {
-              systemInstruction: `You are an elite academic tutor teaching an emergency exam cram student.
-Create an exhaustive, high-yield, engaging learning module.
-All explanations must be simple, accurate, and completely grounded in the topic.
-Format strictly as JSON matching the requested schema.`,
+              systemInstruction: `You are an elite academic professor and exam specialist. Generate a comprehensive exam study page strictly grounded in the document topics. Output clean JSON matching the requested schema.`,
               responseMimeType: 'application/json',
               responseSchema: {
                 type: Type.OBJECT,
@@ -670,123 +697,220 @@ Format strictly as JSON matching the requested schema.`,
                   topicName: { type: Type.STRING },
                   topicType: { 
                     type: Type.STRING, 
-                    description: 'One of: programming, mathematical, theoretical' 
+                    description: 'programming, mathematics, algorithms, dataStructures, or theory' 
                   },
-                  simpleSummary: {
+                  overview: {
                     type: Type.OBJECT,
                     properties: {
-                      whatItIs: { type: Type.STRING, description: 'Clear beginner-friendly definition' },
-                      whyItIsUsed: { type: Type.STRING, description: 'Why it is used in practice' },
-                      howItWorks: { type: Type.STRING, description: 'How it operates internally' },
-                      importantRules: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'Key rules and constraints'
-                      },
-                      syntax: { type: Type.STRING, description: 'Syntax or notation if applicable, else empty' },
-                      documentPoints: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'Important points extracted from the document'
-                      },
-                      simpleExample: { type: Type.STRING, description: 'A clean, easy-to-understand example' },
-                      commonExamMistakes: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'Common exam pitfalls students lose points on'
-                      },
+                      topicName: { type: Type.STRING },
+                      whatItIs: { type: Type.STRING },
+                      whyImportant: { type: Type.STRING },
+                      whereUsed: { type: Type.STRING },
+                      quickSummary: { type: Type.STRING },
                     },
-                    required: ['whatItIs', 'whyItIsUsed', 'howItWorks', 'importantRules', 'documentPoints', 'simpleExample', 'commonExamMistakes'],
+                    required: ['topicName', 'whatItIs', 'whyImportant', 'whereUsed', 'quickSummary'],
+                  },
+                  completeTheory: {
+                    type: Type.OBJECT,
+                    properties: {
+                      definitions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      importantConcepts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      rulesAndProperties: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      characteristics: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      typesOrClassifications: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            typeName: { type: Type.STRING },
+                            description: { type: Type.STRING },
+                          },
+                          required: ['typeName', 'description'],
+                        },
+                      },
+                      workingPrinciple: { type: Type.STRING },
+                      importantTerms: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            term: { type: Type.STRING },
+                            definition: { type: Type.STRING },
+                          },
+                          required: ['term', 'definition'],
+                        },
+                      },
+                      relationships: { type: Type.STRING },
+                    },
+                    required: ['definitions', 'importantConcepts', 'rulesAndProperties', 'characteristics', 'workingPrinciple', 'importantTerms'],
                   },
                   stepByStep: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        stepNumber: { type: Type.INTEGER },
+                        title: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        detail: { type: Type.STRING },
+                      },
+                      required: ['stepNumber', 'title', 'description'],
+                    },
+                  },
+                  examples: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        exampleType: { type: Type.STRING },
+                        content: { type: Type.STRING },
+                        explanation: { type: Type.STRING },
+                      },
+                      required: ['title', 'exampleType', 'content', 'explanation'],
+                    },
+                  },
+                  codeFormulaDiagram: {
                     type: Type.OBJECT,
                     properties: {
-                      programming: {
-                        type: Type.OBJECT,
-                        properties: {
-                          concept: { type: Type.STRING },
-                          codeSnippet: { type: Type.STRING },
-                          codeLineByLine: {
-                            type: Type.ARRAY,
-                            items: {
-                              type: Type.OBJECT,
-                              properties: {
-                                line: { type: Type.STRING },
-                                explanation: { type: Type.STRING },
-                              },
-                              required: ['line', 'explanation'],
-                            },
+                      syntaxOrFormulas: { type: Type.STRING },
+                      codeOrEquations: { type: Type.STRING },
+                      pseudocodeOrDiagram: { type: Type.STRING },
+                      explanation: { type: Type.STRING },
+                    },
+                    required: ['explanation'],
+                  },
+                  examImportant: {
+                    type: Type.OBJECT,
+                    properties: {
+                      mustRemember: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      importantDefinitions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      importantFormulas: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      importantSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      importantDifferences: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      commonlyAskedConcepts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    },
+                    required: ['mustRemember', 'importantDefinitions', 'commonlyAskedConcepts'],
+                  },
+                  howToWriteInExam: {
+                    type: Type.OBJECT,
+                    properties: {
+                      conceptTitle: { type: Type.STRING },
+                      definition: { type: Type.STRING },
+                      explanation: { type: Type.STRING },
+                      example: { type: Type.STRING },
+                      conclusion: { type: Type.STRING },
+                    },
+                    required: ['conceptTitle', 'definition', 'explanation', 'example', 'conclusion'],
+                  },
+                  expectedExamQuestions: {
+                    type: Type.OBJECT,
+                    properties: {
+                      fourMarkQuestions: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            question: { type: Type.STRING },
+                            answer: { type: Type.STRING },
+                            difficulty: { type: Type.STRING },
                           },
-                          expectedOutput: { type: Type.STRING },
-                          whyOutputOccurs: { type: Type.STRING },
+                          required: ['question', 'answer', 'difficulty'],
                         },
                       },
-                      mathematical: {
-                        type: Type.OBJECT,
-                        properties: {
-                          formula: { type: Type.STRING },
-                          variableExplanations: {
-                            type: Type.ARRAY,
-                            items: {
-                              type: Type.OBJECT,
-                              properties: {
-                                variable: { type: Type.STRING },
-                                meaning: { type: Type.STRING },
-                              },
-                              required: ['variable', 'meaning'],
-                            },
+                      sixMarkQuestions: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            question: { type: Type.STRING },
+                            answer: { type: Type.STRING },
+                            difficulty: { type: Type.STRING },
                           },
-                          solvedExampleSteps: {
-                            type: Type.ARRAY,
-                            items: {
-                              type: Type.OBJECT,
-                              properties: {
-                                stepNumber: { type: Type.INTEGER },
-                                description: { type: Type.STRING },
-                                mathWork: { type: Type.STRING },
-                              },
-                              required: ['stepNumber', 'description', 'mathWork'],
-                            },
-                          },
+                          required: ['question', 'answer', 'difficulty'],
                         },
                       },
-                      theoretical: {
-                        type: Type.OBJECT,
-                        properties: {
-                          definition: { type: Type.STRING },
-                          keyCharacteristics: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING },
+                      tenMarkQuestions: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            question: { type: Type.STRING },
+                            answer: { type: Type.STRING },
+                            difficulty: { type: Type.STRING },
                           },
-                          workingPrinciple: { type: Type.STRING },
-                          practicalExample: { type: Type.STRING },
-                          examPoints: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING },
+                          required: ['question', 'answer', 'difficulty'],
+                        },
+                      },
+                    },
+                    required: ['fourMarkQuestions', 'sixMarkQuestions', 'tenMarkQuestions'],
+                  },
+                  importantDifferences: {
+                    type: Type.OBJECT,
+                    properties: {
+                      conceptA: { type: Type.STRING },
+                      conceptB: { type: Type.STRING },
+                      rows: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            parameter: { type: Type.STRING },
+                            conceptAValue: { type: Type.STRING },
+                            conceptBValue: { type: Type.STRING },
                           },
+                          required: ['parameter', 'conceptAValue', 'conceptBValue'],
                         },
                       },
                     },
                   },
-                  examReadySection: {
+                  commonMistakes: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        mistake: { type: Type.STRING },
+                        correctUnderstanding: { type: Type.STRING },
+                      },
+                      required: ['mistake', 'correctUnderstanding'],
+                    },
+                  },
+                  quickRevision: {
                     type: Type.OBJECT,
                     properties: {
-                      learningOutcomes: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'After this lesson, you should be able to: ...'
-                      },
-                      mostImportantExamPoints: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'Crucial exam points to memorize'
-                      },
+                      keyPoints: { type: Type.ARRAY, items: { type: Type.STRING } },
                     },
-                    required: ['learningOutcomes', 'mostImportantExamPoints'],
+                    required: ['keyPoints'],
+                  },
+                  memoryTricks: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        mnemonic: { type: Type.STRING },
+                        meaning: { type: Type.STRING },
+                      },
+                      required: ['mnemonic', 'meaning'],
+                    },
+                  },
+                  quickCheckQuestions: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        id: { type: Type.STRING },
+                        type: { type: Type.STRING, description: 'mcq, true_false, or short_answer' },
+                        question: { type: Type.STRING },
+                        options: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        correctOptionIndex: { type: Type.INTEGER },
+                        correctText: { type: Type.STRING },
+                        explanation: { type: Type.STRING },
+                      },
+                      required: ['id', 'type', 'question', 'explanation'],
+                    },
                   },
                   youtubeClasses: {
                     type: Type.ARRAY,
-                    description: '2-3 YouTube classes specifically related to this topic',
                     items: {
                       type: Type.OBJECT,
                       properties: {
@@ -798,32 +922,28 @@ Format strictly as JSON matching the requested schema.`,
                       required: ['title', 'description', 'searchQuery'],
                     },
                   },
-                  quickCheckQuestions: {
-                    type: Type.ARRAY,
-                    description: '2-3 quick questions for mini check',
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        id: { type: Type.STRING },
-                        question: { type: Type.STRING },
-                        options: {
-                          type: Type.ARRAY,
-                          items: { type: Type.STRING },
-                        },
-                        correctOptionIndex: { type: Type.INTEGER },
-                        explanation: { type: Type.STRING },
-                      },
-                      required: ['question', 'options', 'correctOptionIndex', 'explanation'],
-                    },
-                  },
                 },
-                required: ['topicName', 'topicType', 'simpleSummary', 'stepByStep', 'examReadySection', 'youtubeClasses', 'quickCheckQuestions'],
+                required: [
+                  'topicName',
+                  'overview',
+                  'completeTheory',
+                  'stepByStep',
+                  'examples',
+                  'codeFormulaDiagram',
+                  'examImportant',
+                  'howToWriteInExam',
+                  'expectedExamQuestions',
+                  'commonMistakes',
+                  'quickRevision',
+                  'quickCheckQuestions',
+                  'youtubeClasses',
+                ],
               },
             },
           });
 
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Network timeout during topic learning generation.')), 40000);
+            setTimeout(() => reject(new Error('Network timeout during topic learning generation.')), 45000);
           });
 
           response = await Promise.race([generatePromise, timeoutPromise]);
@@ -840,8 +960,8 @@ Format strictly as JSON matching the requested schema.`,
         const rawText = typeof response.text === 'function' ? response.text() : response.text;
         try {
           const parsed = JSON.parse(rawText || '{}');
-          if (parsed && parsed.simpleSummary && parsed.examReadySection) {
-            // Attach YouTube watchUrl URLs safely to each class
+          if (parsed && parsed.overview && parsed.completeTheory) {
+            // Attach YouTube watchUrls
             const formattedClasses = (Array.isArray(parsed.youtubeClasses) ? parsed.youtubeClasses : []).slice(0, 3).map((yt: any) => {
               const query = yt.searchQuery || `${topicName} tutorial`;
               return {
@@ -853,30 +973,69 @@ Format strictly as JSON matching the requested schema.`,
               };
             });
 
-            // Format quickCheck questions
-            const formattedQuickCheck = (Array.isArray(parsed.quickCheckQuestions) ? parsed.quickCheckQuestions : []).slice(0, 3).map((qc: any, qIdx: number) => {
-              let options = Array.isArray(qc.options) ? qc.options.slice(0, 4) : [];
-              while (options.length < 4) {
-                options.push(`Option ${options.length + 1}`);
-              }
-              return {
-                id: qc.id || `qc-${Date.now()}-${qIdx}`,
-                question: qc.question,
-                options,
-                correctOptionIndex: Math.min(3, Math.max(0, Number(qc.correctOptionIndex) || 0)),
-                explanation: qc.explanation || 'Verified correct explanation based on core principles.',
-              };
-            });
+            // Format expected questions with default marks
+            const formattedExpected = {
+              fourMarkQuestions: (parsed.expectedExamQuestions?.fourMarkQuestions || []).map((q: any) => ({
+                ...q,
+                marks: 4,
+                difficulty: q.difficulty || 'Easy',
+              })),
+              sixMarkQuestions: (parsed.expectedExamQuestions?.sixMarkQuestions || []).map((q: any) => ({
+                ...q,
+                marks: 6,
+                difficulty: q.difficulty || 'Medium',
+              })),
+              tenMarkQuestions: (parsed.expectedExamQuestions?.tenMarkQuestions || []).map((q: any) => ({
+                ...q,
+                marks: 10,
+                difficulty: q.difficulty || 'Difficult',
+              })),
+            };
+
+            // Build backwards-compatibility wrappers
+            const simpleSummaryBackwards = {
+              whatItIs: parsed.overview.whatItIs,
+              whatItMeans: parsed.overview.quickSummary,
+              whyItIsUsed: parsed.overview.whyImportant,
+              howItWorks: parsed.completeTheory.workingPrinciple,
+              importantRules: parsed.completeTheory.rulesAndProperties || [],
+              syntax: parsed.codeFormulaDiagram?.syntaxOrFormulas,
+              documentPoints: parsed.examImportant?.mustRemember || [],
+              simpleExample: parsed.examples?.[0]?.explanation || parsed.overview.quickSummary,
+              commonExamMistakes: (parsed.commonMistakes || []).map((m: any) => `${m.mistake} -> ${m.correctUnderstanding}`),
+              shortExamTip: parsed.examImportant?.commonlyAskedConcepts?.[0] || 'Focus on step-by-step clarity for full rubric marks.',
+            };
 
             return res.json({
               topicName: parsed.topicName || topicName,
-              topicType: parsed.topicType || (topicName.toLowerCase().includes('java') || topicName.toLowerCase().includes('code') || topicName.toLowerCase().includes('tree') || topicName.toLowerCase().includes('algorithm') ? 'programming' : 'theoretical'),
-              simpleSummary: parsed.simpleSummary,
-              stepByStep: parsed.stepByStep || {},
-              examReadySection: parsed.examReadySection,
+              topicType: parsed.topicType || 'theory',
+              overview: parsed.overview,
+              completeTheory: parsed.completeTheory,
+              stepByStep: parsed.stepByStep || [],
+              examples: parsed.examples || [],
+              codeFormulaDiagram: parsed.codeFormulaDiagram || { explanation: 'Core formula and syntax.' },
+              examImportant: parsed.examImportant,
+              howToWriteInExam: parsed.howToWriteInExam,
+              expectedExamQuestions: formattedExpected,
+              importantDifferences: parsed.importantDifferences,
+              commonMistakes: parsed.commonMistakes || [],
+              quickRevision: parsed.quickRevision || { keyPoints: [] },
+              memoryTricks: parsed.memoryTricks || [],
+              quickCheckQuestions: parsed.quickCheckQuestions || [],
               youtubeClasses: formattedClasses,
-              quickCheckQuestions: formattedQuickCheck,
               isSimplerVersion: simplerMode,
+              // Backwards compatibility keys
+              simpleSummary: simpleSummaryBackwards,
+              stepByStepExplanation: (parsed.stepByStep || []).map((s: any) => ({ title: s.title, explanation: s.description })),
+              example: parsed.examples?.[0] ? { title: parsed.examples[0].title, codeOrMath: parsed.examples[0].content, walkthrough: parsed.examples[0].explanation } : undefined,
+              examPoints: parsed.examImportant?.mustRemember || [],
+              quickCheck: (parsed.quickCheckQuestions || []).map((q: any) => ({
+                id: q.id,
+                question: q.question,
+                options: q.options || ['True', 'False'],
+                correctIndex: q.correctOptionIndex || 0,
+                explanation: q.explanation,
+              })),
             });
           }
         } catch (parseErr) {
@@ -884,97 +1043,265 @@ Format strictly as JSON matching the requested schema.`,
         }
       }
 
-      // High-Yield Document-Grounded Fallback if AI fails or throttles
-      console.log(`[Learn Topic] Generating grounded fallback lesson for "${topicName}"`);
-      const isCodeLike = /java|python|c\+\+|code|syntax|class|method|function|tree|stack|queue|sort|search|array|pointer|object|constructor/i.test(topicName + ' ' + (courseName || ''));
+      // Comprehensive Grounded Fallback if AI fails or throttles
+      console.log(`[Learn Topic] Generating comprehensive exam-based fallback for "${topicName}"`);
+      const isCodeLike = /java|python|c\+\+|code|syntax|class|method|function|tree|stack|queue|sort|search|array|pointer|object|constructor|variable/i.test(topicName + ' ' + (courseName || ''));
       const isMathLike = /calculus|math|formula|equation|derivative|integral|matrix|probability|algebra|physics|velocity|kinematics/i.test(topicName + ' ' + (courseName || ''));
-      const topicType = isCodeLike ? 'programming' : isMathLike ? 'mathematical' : 'theoretical';
+      const topicType = isCodeLike ? 'programming' : isMathLike ? 'mathematics' : 'theory';
 
       const fallbackLesson = {
         topicName,
         topicType,
-        simpleSummary: {
-          whatItIs: `${topicName} is a foundational concept in ${courseName}, essential for establishing correct problem-solving logic and exam solutions.`,
-          whyItIsUsed: `It provides a standardized, efficient mechanism to solve core problems without unnecessary complexity or runtime overhead.`,
-          howItWorks: `It establishes clear input constraints, executes specific transformation logic, and guarantees predictable outcomes.`,
-          importantRules: [
-            `Always verify initialization and boundary constraints before executing.`,
-            `Follow the standard syntax or notation conventions strictly to avoid rubric deductions.`,
-            `Identify edge cases (e.g. empty states, null values, or extreme values).`,
-            `Ensure proper clean-up or state termination after completion.`
+        overview: {
+          topicName,
+          whatItIs: `${topicName} is a foundational concept in ${courseName}, establishing the required framework and logic for exam solutions.`,
+          whyImportant: `It provides the exact rules and mechanisms required by academic rubrics, preventing costly conceptual and syntax errors.`,
+          whereUsed: `Heavily tested in written exams, code analysis/derivation questions, and real-world system implementations.`,
+          quickSummary: simplerMode
+            ? `In simple terms, ${topicName} works like a master blueprint or standard rule: once defined, every component follows the exact same logic reliably.`
+            : `${topicName} defines clear constraints, deterministic transitions, and predictable outcomes across both theoretical and practical problem sets.`
+        },
+        completeTheory: {
+          definitions: [
+            `${topicName} is formally defined as the standardized structural or algorithmic principle governing operations in ${courseName}.`,
+            `It guarantees correctness and efficiency when boundary constraints are adhered to.`
           ],
-          syntax: isCodeLike ? `// Standard declaration for ${topicName}\npublic void apply${topicName.replace(/\s+/g, '')}() {\n    // Core logic\n}` : undefined,
-          documentPoints: [
-            topicContext.reason || `Highlighted as a high-priority concept in ${documentTitle}.`,
-            topicContext.keyTakeaway || `Key principle: Review the definitions and step-by-step procedures.`,
-            `Focus on scoring maximum rubric points by showing clear reasoning.`
+          importantConcepts: [
+            `Core initialization and variable scoping rules.`,
+            `Deterministic execution order and state transitions.`,
+            `Handling edge cases (e.g. empty collections, zero values, or null pointers).`
           ],
-          simpleExample: simplerMode
-            ? `Imagine a blueprint for a house: before you can live in the house or paint the walls, the foundation and frame (${topicName}) must be created with the exact dimensions specified.`
-            : `A straightforward implementation of ${topicName} demonstrating standard input processing and expected return value.`,
-          commonExamMistakes: [
-            `Confusing ${topicName} with closely related adjacent topics in ${courseName}.`,
-            `Skipping required edge-case checks (null, 0, or empty inputs).`,
-            `Failing to write down the formal definition or formula before performing derivations.`
+          rulesAndProperties: [
+            `Must be initialized or declared according to strict syntax rules before invocation.`,
+            `State modifications must follow unidirectional, verifiable transitions.`,
+            `Invariants must remain valid across all iterations or method calls.`
+          ],
+          characteristics: [
+            `Standardized academic terminology evaluated on exam rubrics.`,
+            `Predictable time/space or operational complexity.`,
+            `Clear distinction from adjacent syllabus mechanisms.`
+          ],
+          typesOrClassifications: [
+            { typeName: `Basic / Primary Form`, description: `Direct implementation under baseline input constraints.` },
+            { typeName: `Composite / Advanced Form`, description: `Extended implementation incorporating multiple state checks or nested hierarchies.` }
+          ],
+          workingPrinciple: `When conditions for ${topicName} are satisfied, the system validates all entry prerequisites, executes the prescribed transformation sequence, and terminates with verified state integrity.`,
+          importantTerms: [
+            { term: `Initialization`, definition: `Allocating and preparing required memory or state before operation.` },
+            { term: `Invariant`, definition: `A logical condition that remains true throughout the lifecycle of the procedure.` },
+            { term: `Termination`, definition: `Guaranteed clean exit without infinite loops or orphaned resources.` }
+          ],
+          relationships: `Serves as the prerequisite foundation for advanced topics in ${courseName}, directly linking data representation with operational logic.`
+        },
+        stepByStep: [
+          {
+            stepNumber: 1,
+            title: `Identify Inputs & Prerequisites`,
+            description: `Verify that all parameters, variables, and preconditions meet the domain specifications before processing begins.`,
+            detail: `Check for null, negative, or uninitialized values to prevent immediate failure.`
+          },
+          {
+            stepNumber: 2,
+            title: `Execute Core Transformation`,
+            description: `Apply the verified formula, rule, or algorithm logic sequentially to transform the input state.`,
+            detail: `Maintain intermediate state on scratch paper or tracing tables for step-by-step clarity.`
+          },
+          {
+            stepNumber: 3,
+            title: `Verify Invariants & Edge Cases`,
+            description: `Confirm that boundary conditions have been respected and the output matches mathematical or logical expectations.`,
+            detail: `Double check loop exit criteria or base cases.`
+          },
+          {
+            stepNumber: 4,
+            title: `Format Final Exam Result`,
+            description: `State the final outcome clearly with proper units, type signatures, or return values as required by the question prompt.`
+          }
+        ],
+        examples: [
+          {
+            title: `Standard Solved Exam Problem for ${topicName}`,
+            exampleType: isCodeLike ? 'programming' : isMathLike ? 'mathematics' : 'theory',
+            content: isCodeLike
+              ? `// Worked Example for ${topicName}\npublic class Solution {\n    public static void executeProcess() {\n        int count = 0;\n        // Apply ${topicName} logic\n        count += 10;\n        System.out.println("Result: " + count);\n    }\n}`
+              : isMathLike
+              ? `Problem: Calculate the result using ${topicName}.\nGiven: x = 5, y = 10\nStep 1: Formula -> R = (x * y) / 2\nStep 2: Substitution -> R = (5 * 10) / 2 = 50 / 2 = 25\nConclusion: Result = 25`
+              : `Scenario: A system requires verification of ${topicName}.\nProcedure: The evaluator inspects the baseline state, confirms compliance with standard rules, and certifies operational validity.`,
+            explanation: `Notice how the solution explicitly documents the transition from initial inputs to final verified output, fulfilling rubric expectations for maximum marks.`
+          }
+        ],
+        codeFormulaDiagram: {
+          syntaxOrFormulas: isCodeLike
+            ? `// Standard Syntax\npublic returnType operationName(parameters) {\n    // Implementation logic\n}`
+            : isMathLike
+            ? `E = \\sum_{i=1}^{n} (x_i - \\bar{x})^2 \\quad \\text{where } \\bar{x} = \\frac{1}{n}\\sum x_i`
+            : `Rule: Invariant(S_t) \\implies Invariant(S_{t+1})`,
+          codeOrEquations: isCodeLike
+            ? `public void apply${topicName.replace(/[^a-zA-Z]/g, '')}() {\n    // Guaranteed safe execution\n}`
+            : isMathLike
+            ? `f(x) = a x^2 + b x + c`
+            : `Input -> [Validation Check] -> [Transformation] -> Output`,
+          pseudocodeOrDiagram: `
++-----------------------+
+|  1. Input / State     |
++-----------+-----------+
+            |
+            v
++-----------+-----------+
+|  2. ${topicName.slice(0, 16)}  | ---> [Boundary / Edge Verification]
++-----------+-----------+
+            |
+            v
++-----------+-----------+
+|  3. Verified Output   |
++-----------------------+
+`,
+          explanation: `This structural diagram and syntax illustrate how state transitions through validation into deterministic output without side-effects.`
+        },
+        examImportant: {
+          mustRemember: [
+            `Always define the formal academic term in the very first sentence.`,
+            `State all boundary assumptions clearly before writing calculations or code.`,
+            `Draw a neat structural diagram or flowchart if the question carries 5 or more marks.`,
+            `Show every intermediate arithmetic or tracing step for partial credit.`
+          ],
+          importantDefinitions: [
+            `${topicName}: Formal mechanism ensuring predictable transformation and correctness within ${courseName}.`,
+            `Boundary Constraint: The limit values (e.g., 0, max, null) that must be safeguarded.`
+          ],
+          importantFormulas: [
+            isMathLike ? `Core Formula: Output = f(Input) under boundary constraints.` : `Invariant Equation: State_{new} = Transform(State_{old}, Input)`
+          ],
+          importantSteps: [
+            `1. Identify prerequisites`,
+            `2. Apply formula/rule`,
+            `3. Verify edge cases`,
+            `4. Write concluding sentence with units/status`
+          ],
+          importantDifferences: [
+            `Do not confuse static class-level properties with dynamic instance-level properties.`,
+            `Distinguish average-case performance from worst-case boundary limits.`
+          ],
+          commonlyAskedConcepts: [
+            `Explain the working principle and provide a worked example (frequently asked in 6-mark section).`,
+            `Compare and contrast ${topicName} with related adjacent mechanisms (frequently asked in 4-mark section).`,
+            `Full architectural derivation and edge case handling (frequently asked in 10-mark section).`
           ]
         },
-        stepByStep: isCodeLike ? {
-          programming: {
-            concept: `How to implement and utilize ${topicName} correctly in code.`,
-            codeSnippet: `// Example demonstrating ${topicName}\npublic class ExamExample {\n    private String status;\n\n    // Standard implementation\n    public ExamExample(String initial) {\n        this.status = initial; // Line 1\n    }\n\n    public void display() {\n        System.out.println("Output: " + this.status); // Line 2\n    }\n}`,
-            codeLineByLine: [
-              { line: "public ExamExample(String initial)", explanation: "Defines the signature with parameters needed for setup." },
-              { line: "this.status = initial;", explanation: "Binds the passed parameter to the internal instance state." },
-              { line: "System.out.println(...);", explanation: "Outputs the resulting state to verify correct operation." }
-            ],
-            expectedOutput: "Output: Initialized State",
-            whyOutputOccurs: "Because the parameter was bound to the instance variable during execution and printed."
-          }
-        } : isMathLike ? {
-          mathematical: {
-            formula: `Result = f(${topicName}) = \\sum_{i=1}^{n} (x_i - \\bar{x})`,
-            variableExplanations: [
-              { variable: "x_i", meaning: "Individual sample or data parameter value" },
-              { variable: "\\bar{x}", meaning: "Target mean or baseline equilibrium value" },
-              { variable: "n", meaning: "Total sample size or iteration count" }
-            ],
-            solvedExampleSteps: [
-              { stepNumber: 1, description: "Extract given values from the problem statement", mathWork: "Given: n = 4, inputs = [2, 4, 6, 8]" },
-              { stepNumber: 2, description: "Substitute into the verified formula", mathWork: "Apply formula step-by-step" },
-              { stepNumber: 3, description: "Compute final numerical outcome", mathWork: "Result = 20 (verified)" }
-            ]
-          }
-        } : {
-          theoretical: {
-            definition: `${topicName} is formally defined as the structured principle governing state transitions and behavioral rules within ${courseName}.`,
-            keyCharacteristics: [
-              "Deterministic behavioral outcome based on explicit rules",
-              "Standardized terminology recognized across academic exam boards",
-              "Clear distinction from related adjacent mechanisms"
-            ],
-            workingPrinciple: `When a system encounters conditions relevant to ${topicName}, it triggers the sequential validation of core prerequisites followed by deterministic execution.`,
-            practicalExample: `In real-world applications, this principle ensures data integrity and predictable behavior across complex workflows.`,
-            examPoints: [
-              `State the formal definition verbatim in the first sentence of your exam answer.`,
-              `List the 3 key characteristics with bullet points for easy grading.`,
-              `Draw a clean, labeled diagram or flowchart if the exam question carries 5+ marks.`
-            ]
-          }
+        howToWriteInExam: {
+          conceptTitle: `How to Structure Answers for ${topicName}`,
+          definition: `Begin with: "${topicName} is defined as..." and provide the 2-sentence formal definition citing its primary purpose and scope.`,
+          explanation: `Follow with 3-4 organized bullet points detailing the working principle, rules, and operational sequence.`,
+          example: `Provide a concise, error-free worked example or syntax snippet with clean comments and expected output.`,
+          conclusion: `Conclude with a summary sentence stating its significance: "Thus, ${topicName} ensures correctness, deterministic execution, and optimal performance in ${courseName}."`
         },
-        examReadySection: {
-          learningOutcomes: [
-            `Understand the core concept of ${topicName} from first principles.`,
-            `Explain ${topicName} in your own words with zero hesitation.`,
-            `Solve basic and intermediate exam questions without reference notes.`,
-            `Recognize and avoid common exam trick questions and trap answers.`
+        expectedExamQuestions: {
+          fourMarkQuestions: [
+            {
+              question: `Define ${topicName} and state two key characteristics.`,
+              answer: `Definition: ${topicName} is the standardized mechanism in ${courseName} that governs state transitions and algorithmic guarantees.\n\nTwo Characteristics:\n1. Deterministic Execution: Produces reliable output for valid input states.\n2. Standardized Notation: Follows explicit syntax and constraint boundaries recognized on exam rubrics.`,
+              difficulty: 'Easy',
+              marks: 4
+            },
+            {
+              question: `What are the primary prerequisites before applying ${topicName}?`,
+              answer: `Prerequisites include verifying non-null inputs, ensuring boundary limits are within acceptable ranges, and confirming that initial state invariants are properly initialized.`,
+              difficulty: 'Medium',
+              marks: 4
+            }
           ],
-          mostImportantExamPoints: [
-            `Definition: Memorize the exact definition and purpose.`,
-            `Working: Know the sequence of operations or derivations from memory.`,
-            `Trap warning: Watch out for boundary and initialization pitfalls.`,
-            `Exam rubric: Show your intermediate steps clearly for partial credit.`
+          sixMarkQuestions: [
+            {
+              question: `Explain the working principle of ${topicName} with a step-by-step example.`,
+              answer: `Working Principle: ${topicName} operates by validating input preconditions, executing the procedural transformation sequentially, and verifying post-conditions.\n\nWorked Example:\nStep 1: Input initialization with test values.\nStep 2: Intermediate state computation according to the core rule.\nStep 3: Verification of the final result against boundary criteria.\n\nConclusion: The output matches theoretical expectations with zero edge-case violations.`,
+              difficulty: 'Medium',
+              marks: 6
+            }
+          ],
+          tenMarkQuestions: [
+            {
+              question: `Provide a comprehensive analysis of ${topicName}: include definition, structural working, code/mathematical formulation, edge cases, and comparison with alternatives.`,
+              answer: `1. Definition & Role: Formally define ${topicName} and explain its core role in ${courseName}.\n2. Structural Mechanism: Describe the multi-step execution pipeline, detailing how memory and state are managed.\n3. Formulation: Write out the complete formula, syntax snippet, or pseudocode with line-by-line justification.\n4. Edge Cases: Discuss at least three critical edge cases (e.g. empty inputs, upper boundary limits, concurrency/null states) and how they are handled.\n5. Comparison: Summarize the trade-offs (time complexity, space complexity, maintainability) versus alternative approaches.`,
+              difficulty: 'Difficult',
+              marks: 10
+            }
           ]
         },
+        importantDifferences: {
+          conceptA: topicName,
+          conceptB: `Alternative / Traditional Approach`,
+          rows: [
+            { parameter: `Definition`, conceptAValue: `Structured principle with strict formal invariants`, conceptBValue: `Ad-hoc or manual implementation without guarantees` },
+            { parameter: `Purpose`, conceptAValue: `Maximize reliability, exam rubric score, and clarity`, conceptBValue: `Quick prototyping with higher risk of edge-case bugs` },
+            { parameter: `Working`, conceptAValue: `Explicit multi-step pipeline with verification`, conceptBValue: `Implicit single-step execution with minimal checks` },
+            { parameter: `Example`, conceptAValue: `Standardized class/method with boundary checks`, conceptBValue: `Unchecked raw calculations or global mutability` },
+            { parameter: `Advantages`, conceptAValue: `Deterministic, maintainable, high marks on exam rubrics`, conceptBValue: `Low initial boilerplate at the expense of safety` }
+          ]
+        },
+        commonMistakes: [
+          {
+            mistake: `❌ Confusing ${topicName} with related adjacent syllabus concepts.`,
+            correctUnderstanding: `✅ Memorize the distinct trigger conditions and definitions that uniquely identify ${topicName}.`
+          },
+          {
+            mistake: `❌ Omitting boundary or null/zero state checks in written answers.`,
+            correctUnderstanding: `✅ Always write a dedicated edge-case check statement (e.g. "if (input == null) return ...") to earn rubric criteria points.`
+          },
+          {
+            mistake: `❌ Jumping straight to final calculations without showing intermediate derivations.`,
+            correctUnderstanding: `✅ Academic examiners award partial credit for clear step-by-step progress even if an arithmetic slip occurs at the end.`
+          }
+        ],
+        quickRevision: {
+          keyPoints: [
+            `Remember the formal definition: State the purpose and scope in your opening line.`,
+            `Follow the 4-step execution sequence: Input -> Transform -> Verify -> Format.`,
+            `Check boundary conditions: 0, negative, null, or extreme values.`,
+            `Structure answers with headings: Definition, Explanation, Example, Conclusion.`
+          ]
+        },
+        memoryTricks: [
+          {
+            mnemonic: `P-E-V-C`,
+            meaning: `Prerequisites -> Execution -> Verification -> Conclusion (The 4 steps for full marks on ${topicName} questions).`
+          }
+        ],
+        quickCheckQuestions: [
+          {
+            id: `qc-${Date.now()}-1`,
+            type: 'mcq',
+            question: `What is the primary objective of ${topicName}?`,
+            options: [
+              `To enforce correct initialization, structured execution, and verifiable output state.`,
+              `To bypass memory constraints without validation checks.`,
+              `To serve exclusively as an optional cosmetic label.`,
+              `To convert all dynamic executions into static constants.`
+            ],
+            correctOptionIndex: 0,
+            explanation: `The primary objective of ${topicName} is to establish proper initialization, structured execution, and verifiable state.`
+          },
+          {
+            id: `qc-${Date.now()}-2`,
+            type: 'true_false',
+            question: `True or False: Boundary conditions (such as null or empty inputs) can be safely ignored in exam answers for ${topicName}.`,
+            options: [`True`, `False`],
+            correctOptionIndex: 1,
+            explanation: `False! Academic exam rubrics explicitly award points for identifying and properly handling boundary and edge cases.`
+          },
+          {
+            id: `qc-${Date.now()}-3`,
+            type: 'mcq',
+            question: `Which of the following describes a common exam trap regarding ${topicName}?`,
+            options: [
+              `Neglecting edge cases or failing to show step-by-step derivations.`,
+              `Using standard variable naming and clean indentation.`,
+              `Writing a clear concluding sentence with units.`,
+              `Stating the formal definition in the first sentence.`
+            ],
+            correctOptionIndex: 0,
+            explanation: `Examiners frequently penalize answers that skip intermediate steps or neglect boundary validation.`
+          }
+        ],
         youtubeClasses: [
           {
             title: `${topicName} Explained (Complete Beginner Guide)`,
@@ -998,33 +1325,44 @@ Format strictly as JSON matching the requested schema.`,
             watchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${topicName} crash course`)}`
           }
         ],
-        quickCheckQuestions: [
-          {
-            id: `qc-${Date.now()}-1`,
-            question: `What is the primary objective or purpose of ${topicName}?`,
-            options: [
-              `To correctly initialize and control state according to formal rules.`,
-              `To bypass system memory constraints without verification.`,
-              `To serve exclusively as an optional cosmetic label.`,
-              `To convert all dynamic operations into static constants.`
-            ],
-            correctOptionIndex: 0,
-            explanation: `The primary objective of ${topicName} is to establish proper initialization, structured execution, and verifiable state.`
-          },
-          {
-            id: `qc-${Date.now()}-2`,
-            question: `Which of the following describes a common exam trap when dealing with ${topicName}?`,
-            options: [
-              `Neglecting boundary constraints or null/edge initialization states.`,
-              `Using standard variable naming conventions.`,
-              `Writing clear comments and structured indentation.`,
-              `Solving the problem using the recommended formula.`
-            ],
-            correctOptionIndex: 0,
-            explanation: `Examiners frequently test whether students remember to handle boundary and initial condition checks.`
-          }
+        isSimplerVersion: simplerMode,
+        // Backwards compatibility keys
+        simpleSummary: {
+          whatItIs: `${topicName} is a foundational concept in ${courseName}, essential for establishing correct problem-solving logic and exam solutions.`,
+          whatItMeans: `Understanding ${topicName} means knowing its foundational rules, execution order, and memory behavior in test scenarios.`,
+          whyItIsUsed: `It provides a standardized, efficient mechanism to solve core problems without unnecessary complexity.`,
+          howItWorks: `It establishes clear input constraints, executes specific transformation logic, and guarantees predictable outcomes.`,
+          importantRules: [
+            `Always verify initialization and boundary constraints before executing.`,
+            `Follow the standard syntax or notation conventions strictly to avoid rubric deductions.`,
+            `Identify edge cases (e.g. empty states, null values, or extreme values).`,
+            `Ensure proper clean-up or state termination after completion.`
+          ],
+          syntax: isCodeLike ? `// Standard declaration for ${topicName}\npublic void apply${topicName.replace(/\s+/g, '')}() {\n    // Core logic\n}` : undefined,
+          documentPoints: [
+            topicContext.reason || `Highlighted as a high-priority concept in ${documentTitle}.`,
+            topicContext.keyTakeaway || `Key principle: Review the definitions and step-by-step procedures.`
+          ],
+          simpleExample: simplerMode
+            ? `Imagine a blueprint for a house: before you can live in the house or paint the walls, the foundation (${topicName}) must be created with the exact dimensions specified.`
+            : `A straightforward implementation of ${topicName} demonstrating standard input processing and expected return value.`,
+          commonExamMistakes: [
+            `Confusing ${topicName} with closely related adjacent topics in ${courseName}.`,
+            `Skipping required edge-case checks (null, 0, or empty inputs).`,
+            `Failing to write down the formal definition or formula before performing derivations.`
+          ],
+          shortExamTip: `Memorize the standard rubric definition and boundary invariants for maximum points.`
+        },
+        stepByStepExplanation: [
+          { title: 'Prerequisites', explanation: 'Verify input conditions and boundary limits.' },
+          { title: 'Transformation', explanation: 'Apply verified formula or procedural logic.' },
+          { title: 'Verification', explanation: 'Confirm invariants and edge condition handling.' }
         ],
-        isSimplerVersion: simplerMode
+        examPoints: [
+          `State the formal definition verbatim in the first sentence of your exam answer.`,
+          `Show intermediate steps for partial credit.`,
+          `Check boundary constraints.`
+        ]
       };
 
       return res.json(fallbackLesson);

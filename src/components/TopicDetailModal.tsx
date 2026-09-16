@@ -33,41 +33,41 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl backdrop-blur-2xl bg-[#0c132d] border border-indigo-500/40 p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.8)]"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-[#08110F] border border-[#294238] p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.8)] text-[#F2F7F3]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow Accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/15 blur-3xl rounded-full pointer-events-none -z-10" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#2F6B4A]/15 blur-3xl rounded-full pointer-events-none -z-10" />
 
         {/* Top Header */}
-        <div className="flex items-start justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-start justify-between pb-4 border-b border-[#294238]">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
                 topic.priority === 'high' 
-                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  ? 'bg-[#F29B9B]/20 text-[#F29B9B] border border-[#F29B9B]/40'
                   : topic.priority === 'medium'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                  ? 'bg-[#E8D58A]/20 text-[#E8D58A] border border-[#E8D58A]/40'
+                  : 'bg-[#8FD3A2]/20 text-[#8FD3A2] border border-[#8FD3A2]/40'
               }`}>
                 {topic.priority.toUpperCase()} PRIORITY
               </span>
               {topic.difficulty && (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-200 border border-slate-700">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-[#12211D] text-[#AEBDB4] border border-[#294238]">
                   {topic.difficulty}
                 </span>
               )}
-              <span className="text-xs font-mono text-purple-300">
+              <span className="text-xs font-mono text-[#BFE8C8]">
                 {topic.importance}% importance
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-[#7F9188] font-mono">
                 • {topic.recommendedMinutes} min sprint
               </span>
             </div>
-            <h3 className="text-2xl font-extrabold text-white font-display">
+            <h3 className="text-2xl font-extrabold text-[#F2F7F3] font-display">
               {topic.name}
             </h3>
-            <p className="text-xs text-indigo-300 mt-0.5">
+            <p className="text-xs text-[#8FD3A2] mt-0.5">
               Predicted Question: {topic.examQuestionType}
             </p>
           </div>
@@ -75,7 +75,7 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
           <button
             id="close-topic-modal-btn"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800/80 transition-colors"
+            className="p-1.5 text-[#AEBDB4] hover:text-[#F2F7F3] rounded-lg hover:bg-[#12211D] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,62 +85,62 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
         <div className="py-6 space-y-6 text-sm">
           {/* Reason for Priority / Document Evidence */}
           {topic.reason && (
-            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1.5">
-              <div className="flex items-center gap-2 text-purple-300 font-semibold text-xs uppercase tracking-wider">
-                <Lightbulb className="w-4 h-4 text-purple-400" />
+            <div className="p-4 rounded-2xl bg-[#12211D] border border-[#294238] space-y-1.5">
+              <div className="flex items-center gap-2 text-[#8FD3A2] font-semibold text-xs uppercase tracking-wider">
+                <Lightbulb className="w-4 h-4 text-[#8FD3A2]" />
                 <span>Document Priority Evidence</span>
               </div>
-              <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
+              <p className="text-[#AEBDB4] text-xs sm:text-sm leading-relaxed">
                 {topic.reason}
               </p>
             </div>
           )}
 
           {/* Core Emergency Takeaway */}
-          <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-1.5">
-            <div className="flex items-center gap-2 text-indigo-300 font-semibold text-xs uppercase tracking-wider">
-              <Zap className="w-4 h-4 text-yellow-400" />
+          <div className="p-4 rounded-2xl bg-[#0D1916] border border-[#294238] space-y-1.5">
+            <div className="flex items-center gap-2 text-[#BFE8C8] font-semibold text-xs uppercase tracking-wider">
+              <Zap className="w-4 h-4 text-[#8FD3A2]" />
               <span>Core Rule / Must-Know Concept</span>
             </div>
-            <p className="text-slate-100 font-medium leading-relaxed">
+            <p className="text-[#F2F7F3] font-medium leading-relaxed">
               {topic.keyTakeaway}
             </p>
           </div>
 
           {/* Professor Exam Trap Warning */}
-          <div className="p-4 rounded-2xl bg-red-950/30 border border-red-500/30 space-y-1.5">
-            <div className="flex items-center gap-2 text-red-300 font-semibold text-xs uppercase tracking-wider">
-              <AlertTriangle className="w-4 h-4 text-red-400" />
+          <div className="p-4 rounded-2xl bg-[#0D1916] border border-[#F29B9B]/40 space-y-1.5">
+            <div className="flex items-center gap-2 text-[#F29B9B] font-semibold text-xs uppercase tracking-wider">
+              <AlertTriangle className="w-4 h-4 text-[#F29B9B]" />
               <span>Watch Out: Common Exam Trap</span>
             </div>
-            <p className="text-red-200 text-xs sm:text-sm leading-relaxed">
+            <p className="text-[#F29B9B]/90 text-xs sm:text-sm leading-relaxed">
               {topic.flashQuestion.trapNote}
             </p>
           </div>
 
           {/* Rapid Active Recall Drill */}
-          <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div className="p-5 rounded-2xl bg-[#12211D] border border-[#294238] space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-purple-300 font-semibold text-xs uppercase tracking-wider">
-                <HelpCircle className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-[#BFE8C8] font-semibold text-xs uppercase tracking-wider">
+                <HelpCircle className="w-4 h-4 text-[#8FD3A2]" />
                 <span>3-Minute Active Recall Test</span>
               </div>
-              <span className="text-[11px] text-slate-400">Say answer out loud before revealing</span>
+              <span className="text-[11px] text-[#7F9188]">Say answer out loud before revealing</span>
             </div>
 
-            <p className="text-white font-medium text-base">
+            <p className="text-[#F2F7F3] font-medium text-base">
               "{topic.flashQuestion.question}"
             </p>
 
             {showAnswer ? (
-              <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-purple-200 text-xs sm:text-sm leading-relaxed animate-in fade-in">
-                <strong className="block text-purple-300 mb-1 font-semibold">Model Exam Answer:</strong>
+              <div className="p-3.5 rounded-xl bg-[#0D1916] border border-[#8FD3A2]/40 text-[#AEBDB4] text-xs sm:text-sm leading-relaxed animate-in fade-in">
+                <strong className="block text-[#BFE8C8] mb-1 font-semibold">Model Exam Answer:</strong>
                 {topic.flashQuestion.answer}
               </div>
             ) : (
               <button
                 onClick={() => setShowAnswer(true)}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-colors cursor-pointer"
+                className="w-full py-2.5 rounded-xl text-xs font-semibold text-[#AEBDB4] hover:text-[#F2F7F3] bg-[#0D1916] hover:bg-[#172A24] border border-[#294238] transition-colors cursor-pointer"
               >
                 Reveal Model Answer
               </button>
@@ -149,10 +149,10 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div className="pt-4 border-t border-[#294238] flex items-center justify-between gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-medium text-[#7F9188] hover:text-[#F2F7F3] transition-colors cursor-pointer"
           >
             Close Sheet
           </button>
@@ -165,8 +165,8 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
             }}
             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
               isMastered
-                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
-                : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]'
+                ? 'bg-[#2F6B4A]/30 text-[#9FE2B0] border border-[#9FE2B0]/40'
+                : 'bg-[#BFE8C8] hover:bg-[#D9F3DE] text-[#08110F] shadow-md border border-[#8FD3A2]/40'
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />

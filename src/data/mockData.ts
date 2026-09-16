@@ -8,6 +8,28 @@ export const INITIAL_RESCUE_PLAN: ExamRescuePlan = {
   readinessPercentage: 62,
   topics: [
     {
+      id: 'topic-static-vars',
+      name: 'Static Variables',
+      priority: 'high',
+      importance: 88,
+      recommendedMinutes: 20,
+      tags: ['Class-Level Scope', 'Memory Allocation', 'Common Exam Trap'],
+      completed: false,
+      scoreYieldPoints: 14,
+      examQuestionType: 'Code Tracing & Memory Diagnostics',
+      keyTakeaway: 'Static variables belong to the class itself rather than instances. All instances share a single memory copy initialized when the class is loaded.',
+      flashQuestion: {
+        question: 'What happens when one object instance modifies a static variable, and where is it stored?',
+        answer: 'The modification is immediately visible to all instances because static variables reside in class/method memory, shared across instances.',
+        trapNote: 'Do not use instance "this" keyword inside static context. Static variables can be accessed directly via ClassName.variable.'
+      },
+      isWeak: true,
+      status: 'weak',
+      quizAccuracy: 42,
+      quizAttempts: 3,
+      weakReason: 'Active recall mistakes: confused instance variables with shared class-level static memory'
+    },
+    {
       id: 'topic-bst',
       name: 'Binary Search Tree',
       priority: 'high',

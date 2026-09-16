@@ -302,9 +302,15 @@ export async function fetchCrashLesson(
       matchingTopic?.reason ? `Exam relevance: ${matchingTopic.reason}` : `Watch out for boundary and edge-case exceptions.`,
       `Focus on state changes and invariant properties.`
     ],
+    importantSteps: [
+      `1. Write the formal textbook definition in the opening sentence.`,
+      `2. State the primary formula, rule, or mechanism.`,
+      `3. Walk through a small concrete trace or calculation.`
+    ],
     formulaOrRule: matchingTopic?.difficulty ? `Rule for ${matchingTopic.difficulty}-level problems` : `Core Invariant: Verify input bounds before evaluating.`,
     smallExample: `Sample: In a typical exam prompt involving ${topicName}, evaluate the initial parameters, apply the core rule, and state the resulting invariant.`,
-    examTip: matchingTopic?.flashQuestion?.trapNote || `Common Trap: Avoid mixing up ${topicName} with adjacent syllabus subtopics.`
+    examTip: matchingTopic?.flashQuestion?.trapNote || `Common Trap: Avoid mixing up ${topicName} with adjacent syllabus subtopics.`,
+    commonMistake: `Skipping boundary conditions or writing generic prose instead of technical keywords.`
   };
 }
 
@@ -323,130 +329,320 @@ export async function fetchTopicLearning(
     t => t.name.toLowerCase() === topicName.toLowerCase()
   );
 
-  try {
-    const res = await fetch('/api/learn-topic', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topicName,
-        courseName: plan.courseName || 'Exam Syllabus',
-        documentTitle: plan.documentTitle || plan.examTitle,
-        fileData: plan.rawDocumentBase64,
-        mimeType: plan.rawDocumentMime,
-        simplerMode: options.simplerMode || false,
-        previousExplanation: options.previousExplanation || '',
-        topicContext: {
-          priority: matchingTopic?.priority || 'high',
-          difficulty: matchingTopic?.difficulty || 'Medium',
-          importance: matchingTopic?.importance || 80,
-          studyTimeMinutes: matchingTopic?.recommendedMinutes || 20,
-          reason: matchingTopic?.reason || '',
-          tags: matchingTopic?.tags || [],
-          keyTakeaway: matchingTopic?.keyTakeaway || '',
-          examQuestionType: matchingTopic?.examQuestionType || 'High-Yield Concept',
-          flashQuestion: matchingTopic?.flashQuestion,
-          importantConcepts: plan.importantConcepts || [],
-          examQuestionAreas: plan.examQuestionAreas || [],
-        },
-      }),
-    });
+  const RETRY_DELAYS = [1000, 2000, 3000];
 
-    if (res.ok) {
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = RETRY_DELAYS[attempt - 1];
+        console.log(`[Gemini Topic Learning Retry] Attempt ${attempt} of ${RETRY_DELAYS.length}. Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      const res = await fetch('/api/learn-topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topicName,
+          courseName: plan.courseName || 'Exam Syllabus',
+          documentTitle: plan.documentTitle || plan.examTitle,
+          fileData: plan.rawDocumentBase64,
+          mimeType: plan.rawDocumentMime,
+          simplerMode: options.simplerMode || false,
+          previousExplanation: options.previousExplanation || '',
+          topicContext: {
+            priority: matchingTopic?.priority || 'high',
+            difficulty: matchingTopic?.difficulty || 'Medium',
+            importance: matchingTopic?.importance || 80,
+            studyTimeMinutes: matchingTopic?.recommendedMinutes || 20,
+            reason: matchingTopic?.reason || '',
+            tags: matchingTopic?.tags || [],
+            keyTakeaway: matchingTopic?.keyTakeaway || '',
+            examQuestionType: matchingTopic?.examQuestionType || 'High-Yield Concept',
+            flashQuestion: matchingTopic?.flashQuestion,
+            importantConcepts: plan.importantConcepts || [],
+            examQuestionAreas: plan.examQuestionAreas || [],
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const isRetryable = res.status === 503 || res.status === 429 || res.status === 502 || res.status === 504;
+        if (isRetryable && attempt < RETRY_DELAYS.length) {
+          continue;
+        }
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+
       const data = await res.json();
-      if (data && data.simpleSummary && data.examReadySection) {
+      if (data && (data.overview || data.simpleSummary)) {
         return data;
       }
+    } catch (err: any) {
+      const errMsg = typeof err?.message === 'string' ? err.message : '';
+      const isRetryable = errMsg.includes('503') || errMsg.includes('429') || errMsg.includes('fetch');
+      if (isRetryable && attempt < RETRY_DELAYS.length) {
+        continue;
+      }
+      console.warn('Error in fetchTopicLearning, proceeding with resilient fallback:', err);
+      break;
     }
-  } catch (err) {
-    console.warn('Network error in fetchTopicLearning, using high-yield fallback:', err);
   }
 
   // High-Yield Document-Grounded Fallback
-  const isCode = /java|python|c\+\+|code|syntax|class|method|function|tree|stack|queue|sort|search|array|pointer|object|constructor/i.test(topicName + ' ' + (plan.courseName || ''));
+  const isStaticVars = /static\s*var/i.test(topicName);
+  const isCode = isStaticVars || /java|python|c\+\+|code|syntax|class|method|function|tree|stack|queue|sort|search|array|pointer|object|constructor|variable/i.test(topicName + ' ' + (plan.courseName || ''));
   const isMath = /calculus|math|formula|equation|derivative|integral|matrix|probability|algebra|physics|velocity|kinematics/i.test(topicName + ' ' + (plan.courseName || ''));
-  const topicType = isCode ? 'programming' : isMath ? 'mathematical' : 'theoretical';
+  const topicType = isCode ? 'programming' : isMath ? 'mathematics' : 'theory';
 
   return {
     topicName,
     topicType,
-    simpleSummary: {
-      whatItIs: `${topicName} is a central topic in ${plan.courseName || 'the syllabus'}, essential for mastering upcoming exam problems.`,
-      whyItIsUsed: `It establishes structured logic, clean predictability, and prevents high-frequency exam errors.`,
-      howItWorks: `It evaluates input parameters, verifies conditions, and executes unambiguous transformations.`,
-      importantRules: [
-        `Always verify initial conditions and variable state.`,
-        `Preserve expected return types and boundary invariants.`,
-        `Handle empty or null states cleanly.`
+    overview: {
+      topicName,
+      whatItIs: isStaticVars
+        ? `A static variable in Java/OOP is a variable declared with the 'static' keyword that belongs to the class itself rather than any individual object instance.`
+        : `${topicName} is a central topic in ${plan.courseName || 'the syllabus'}, essential for mastering upcoming exam problems.`,
+      whyImportant: isStaticVars
+        ? `It enables shared memory access across all instances and eliminates redundant object allocations.`
+        : `It provides the exact rules and mechanisms evaluated on academic grading rubrics.`,
+      whereUsed: isStaticVars
+        ? `Widely used for global constants, counters, database connection pools, and singleton patterns.`
+        : `Tested in theory questions, code tracing, derivations, and application problems.`,
+      quickSummary: isStaticVars
+        ? `No matter how many objects you instantiate, only ONE shared copy of a static variable exists in memory across the entire program execution.`
+        : `${topicName} defines clear constraints, execution invariants, and predictable outcomes across both theoretical and practical problem sets.`
+    },
+    completeTheory: {
+      definitions: [
+        isStaticVars
+          ? `A static variable is a class-level variable initialized once when the JVM loads the class.`
+          : `${topicName} is formally defined as the standardized structural or algorithmic principle governing operations in ${plan.courseName || 'the course'}.`
       ],
-      syntax: isCode ? `// Standard ${topicName} pattern\npublic void execute${topicName.replace(/\s+/g, '')}() {\n    // Implementation\n}` : undefined,
-      documentPoints: [
-        matchingTopic?.reason || `Extracted as a top-priority concept in ${plan.documentTitle || 'your document'}.`,
-        matchingTopic?.keyTakeaway || `Core takeaway: Review definitions and boundary mechanics.`
+      importantConcepts: [
+        isStaticVars
+          ? `Shared Method Area memory allocation across all instances.`
+          : `Deterministic execution order and state transitions.`
       ],
-      simpleExample: options.simplerMode
-        ? `Think of ${topicName} like setting up a workspace before starting a job: everything has its designated spot and must be initialized before work begins.`
-        : `A standard implementation demonstrating correct parameter binding and output verification.`,
-      commonExamMistakes: [
-        `Confusing ${topicName} with closely related adjacent syllabus concepts.`,
-        `Missing edge-case condition checks (e.g. 0, null, or boundaries).`
+      rulesAndProperties: isStaticVars
+        ? [
+            `Declared using the 'static' modifier outside any method.`,
+            `Accessed directly via 'ClassName.variableName' without creating an object instance.`,
+            `Static methods cannot access non-static instance variables or use 'this' or 'super'.`,
+            `Initialized only once when the class is loaded into memory.`
+          ]
+        : [
+            `Always verify initial conditions and variable state.`,
+            `Preserve expected return types and boundary invariants.`,
+            `Handle empty or null states cleanly.`
+          ],
+      characteristics: [
+        `Standardized academic terminology evaluated on exam rubrics.`,
+        `Predictable time and space complexity characteristics.`,
+        `Explicit boundary criteria that distinguish it from adjacent mechanisms.`
+      ],
+      typesOrClassifications: [
+        { typeName: `Basic Form`, description: `Baseline configuration adhering to direct constraints.` },
+        { typeName: `Extended Form`, description: `Advanced usage incorporating boundary validation and composite conditions.` }
+      ],
+      workingPrinciple: isStaticVars
+        ? `Memory is allocated in the Method Area / Metaspace when the class is loaded by the JVM. All instances point to this exact same memory reference.`
+        : `Upon evaluation under specified conditions, it validates all entry preconditions and executes verified state transformations.`,
+      importantTerms: [
+        { term: `Initialization`, definition: `Setting up baseline memory or variables before invocation.` },
+        { term: `Invariant`, definition: `A condition that remains consistently valid throughout execution.` }
+      ],
+      relationships: `Connects foundational representation with runtime state transitions in ${plan.courseName || 'the syllabus'}.`
+    },
+    stepByStep: [
+      {
+        stepNumber: 1,
+        title: `Identify Prerequisites & Memory Model`,
+        description: `Verify initial values, scoping rules, and memory allocation requirements before execution.`,
+        detail: `Inspect for null, out-of-bounds, or uninitialized state.`
+      },
+      {
+        stepNumber: 2,
+        title: `Execute Core Logic`,
+        description: `Apply the formal rule or procedural operation sequentially.`,
+        detail: `Track state transitions accurately on scratch paper.`
+      },
+      {
+        stepNumber: 3,
+        title: `Verify Invariants & Edge Cases`,
+        description: `Confirm that boundary limits are respected and final values match expectations.`
+      },
+      {
+        stepNumber: 4,
+        title: `Formulate Final Answer`,
+        description: `Present the verified outcome clearly with units or code syntax for full marks.`
+      }
+    ],
+    examples: [
+      {
+        title: `Core Worked Example for ${topicName}`,
+        exampleType: isCode ? 'programming' : isMath ? 'mathematics' : 'theory',
+        content: isStaticVars
+          ? `class Student {\n    static int studentCount = 0;\n    Student() { studentCount++; }\n}\n// Student.studentCount is shared by all instances!`
+          : isCode
+          ? `// Standard example\npublic void execute() {\n    // Core logic for ${topicName}\n}`
+          : isMath
+          ? `Formula: R = f(x) = (x * 2) + 5\nFor x = 10: R = (10 * 2) + 5 = 25`
+          : `Standard application scenario demonstrating compliant state transitions.`,
+        explanation: `Demonstrates clean compliance with syllabus requirements and expected output formatting.`
+      }
+    ],
+    codeFormulaDiagram: {
+      syntaxOrFormulas: isStaticVars
+        ? `public static int variableName = initialValue;`
+        : isCode
+        ? `public returnType methodName(parameters) { ... }`
+        : `Output = f(Input) \\quad \\text{under boundary conditions}`,
+      codeOrEquations: isStaticVars
+        ? `ClassName.variableName; // Recommended access syntax`
+        : `Verified formulation`,
+      pseudocodeOrDiagram: `
++-----------------------------------+
+|  Class / Metaspace Memory Slot    |  <-- [Shared Single Copy]
++-----------------+-----------------+
+                  |
+        +---------+---------+
+        |                   |
+  Instance a1         Instance a2
+`,
+      explanation: `Illustrates how memory and logic flow deterministically through the system.`
+    },
+    examImportant: {
+      mustRemember: [
+        `Write the formal definition verbatim in your opening answer sentence.`,
+        `Always check boundary and edge cases (0, null, extremes).`,
+        `Draw a clear diagram if the question carries 5 or more marks.`,
+        `Show step-by-step working for partial marks.`
+      ],
+      importantDefinitions: [
+        `${topicName}: Standardized mechanism ensuring predictable transformation and correctness within ${plan.courseName || 'the course'}.`
+      ],
+      importantFormulas: [
+        `Invariant Formula: State_{new} = Transform(State_{old}, Input)`
+      ],
+      importantSteps: [
+        `1. Prerequisites validation`,
+        `2. Sequential execution`,
+        `3. Boundary verification`,
+        `4. Concluding answer statement`
+      ],
+      importantDifferences: [
+        `Do not confuse class-level shared state with instance-level private state.`
+      ],
+      commonlyAskedConcepts: [
+        `Explain working principle with a diagram (6 marks).`,
+        `Differentiate from alternative methods (4 marks).`
       ]
     },
-    stepByStep: isCode ? {
-      programming: {
-        concept: `How to implement ${topicName} in an exam setting.`,
-        codeSnippet: `public class Example {\n    private String name;\n    public Example(String n) {\n        this.name = n;\n    }\n    public String getInfo() { return this.name; }\n}`,
-        codeLineByLine: [
-          { line: "public Example(String n)", explanation: "Method/constructor signature declaring parameter input." },
-          { line: "this.name = n;", explanation: "Stores parameter to instance variable for predictable state." },
-          { line: "return this.name;", explanation: "Accesses stored value cleanly." }
-        ],
-        expectedOutput: "Output reflects the initialized instance value.",
-        whyOutputOccurs: "Because the parameter was assigned to the object's memory during invocation."
-      }
-    } : isMath ? {
-      mathematical: {
-        formula: `\\Delta = f(${topicName}) = \\sum_{i=1}^{n} (x_i - \\mu)^2`,
-        variableExplanations: [
-          { variable: "x_i", meaning: "Observed value at step i" },
-          { variable: "\\mu", meaning: "Mean or reference baseline value" },
-          { variable: "n", meaning: "Count of evaluated elements" }
-        ],
-        solvedExampleSteps: [
-          { stepNumber: 1, description: "Extract given values", mathWork: "Given: inputs [3, 5, 7], mean = 5" },
-          { stepNumber: 2, description: "Apply formula differences", mathWork: "(-2)^2 + (0)^2 + (2)^2 = 4 + 0 + 4" },
-          { stepNumber: 3, description: "Compute final total", mathWork: "Total = 8 (verified)" }
-        ]
-      }
-    } : {
-      theoretical: {
-        definition: `${topicName} is formally defined as the governing mechanism for consistent state and workflow transitions within ${plan.courseName || 'the course'}.`,
-        keyCharacteristics: [
-          "Deterministic state execution",
-          "Standardized terminology tested on academic rubrics",
-          "Explicit boundary criteria"
-        ],
-        workingPrinciple: `Upon invocation under specified conditions, it enforces prerequisites and executes verified transitions.`,
-        practicalExample: `Commonly deployed across production systems to guarantee integrity under varying inputs.`,
-        examPoints: [
-          `State definition accurately in the opening sentence.`,
-          `Highlight 3 distinguishing characteristics.`,
-          `List one concrete edge-case test.`
-        ]
-      }
+    howToWriteInExam: {
+      conceptTitle: `How to Structure Answers for ${topicName}`,
+      definition: `Begin with: "${topicName} is defined as..." stating its purpose in two clean sentences.`,
+      explanation: `Provide 3-4 numbered or bulleted points detailing the working principle and rules.`,
+      example: `Include a concise, bug-free code snippet or solved calculation.`,
+      conclusion: `Conclude: "Thus, ${topicName} ensures correctness and efficiency in ${plan.courseName || 'the syllabus'}."`
     },
-    examReadySection: {
-      learningOutcomes: [
-        `Understand ${topicName} from first principles.`,
-        `Explain the mechanism clearly in your own words.`,
-        `Solve fundamental and medium-level exam questions.`,
-        `Detect and avoid common distractor answers.`
+    expectedExamQuestions: {
+      fourMarkQuestions: [
+        {
+          question: `Define ${topicName} and state two key rules or properties.`,
+          answer: `Definition: ${topicName} is the standardized mechanism in ${plan.courseName || 'the course'} governing state correctness.\n\nTwo Rules:\n1. Strict adherence to prerequisite declarations.\n2. Invariant preservation across all operational cycles.`,
+          difficulty: 'Easy',
+          marks: 4
+        }
       ],
-      mostImportantExamPoints: [
-        `Core Definition: Memorize exact rubric terminology.`,
-        `Primary Rule: Verify prerequisites and boundaries.`,
-        `High-Yield Tip: Write out intermediate steps for partial credit.`
+      sixMarkQuestions: [
+        {
+          question: `Explain the working principle of ${topicName} with a step-by-step example.`,
+          answer: `Working Principle: Operates by checking preconditions, executing the procedural transformation sequentially, and verifying postconditions.\n\nExample:\nStep 1: Input setup\nStep 2: Core rule application\nStep 3: Verification of result against boundary limits.`,
+          difficulty: 'Medium',
+          marks: 6
+        }
+      ],
+      tenMarkQuestions: [
+        {
+          question: `Provide a detailed examination of ${topicName}: include definition, working principle, code/formula representation, edge cases, and rubric-ready solution.`,
+          answer: `1. Definition & Scope: Formal definition and theoretical context.\n2. Mechanism: Step-by-step execution breakdown.\n3. Formulation: Exact syntax or equation.\n4. Edge Cases: Handling null/empty/extreme states.\n5. Conclusion: Comparison with alternative approaches.`,
+          difficulty: 'Difficult',
+          marks: 10
+        }
       ]
     },
+    importantDifferences: {
+      conceptA: topicName,
+      conceptB: `Conventional Approach`,
+      rows: [
+        { parameter: `Definition`, conceptAValue: `Structured principle with strict invariants`, conceptBValue: `Ad-hoc implementation with minimal guarantees` },
+        { parameter: `Purpose`, conceptAValue: `Guaranteed exam rubric compliance and safety`, conceptBValue: `Quick prototyping with high bug risk` },
+        { parameter: `Working`, conceptAValue: `Sequential verification pipeline`, conceptBValue: `Direct execution without invariant checks` },
+        { parameter: `Example`, conceptAValue: `Standardized, boundary-checked formulation`, conceptBValue: `Unchecked raw statements` },
+        { parameter: `Advantages`, conceptAValue: `Deterministic, maintainable, full marks`, conceptBValue: `Slightly less initial boilerplate` }
+      ]
+    },
+    commonMistakes: [
+      {
+        mistake: `❌ Confusing ${topicName} with closely related adjacent concepts.`,
+        correctUnderstanding: `✅ Memorize the specific defining characteristics and syntax triggers that identify ${topicName}.`
+      },
+      {
+        mistake: `❌ Skipping edge-case checks (null, zero, or boundary values).`,
+        correctUnderstanding: `✅ Always write explicit boundary condition checks to secure full rubric points.`
+      }
+    ],
+    quickRevision: {
+      keyPoints: [
+        `State the formal definition verbatim in your first sentence.`,
+        `Follow the 4-step sequence: Prerequisites -> Transform -> Verify -> Format.`,
+        `Double-check boundary limits before concluding.`,
+        `Draw clean labeled diagrams for 5+ mark questions.`
+      ]
+    },
+    memoryTricks: [
+      {
+        mnemonic: `P-E-V-C`,
+        meaning: `Prerequisites -> Execution -> Verification -> Conclusion (The 4 keys for full marks).`
+      }
+    ],
+    quickCheckQuestions: [
+      {
+        id: `qc-${Date.now()}-1`,
+        type: 'mcq',
+        question: `What is the primary objective of ${topicName}?`,
+        options: [
+          `To establish verified initialization, state integrity, and predictable execution.`,
+          `To bypass validation requirements under memory pressure.`,
+          `To convert all runtime variables into static constants.`,
+          `To prevent external classes from ever executing.`
+        ],
+        correctOptionIndex: 0,
+        explanation: `The primary objective is verified initialization and deterministic state transitions.`
+      },
+      {
+        id: `qc-${Date.now()}-2`,
+        type: 'true_false',
+        question: `True or False: Boundary conditions (such as null or empty inputs) can be safely ignored in exam answers for ${topicName}.`,
+        options: [`True`, `False`],
+        correctOptionIndex: 1,
+        explanation: `False! Examiners specifically allocate marks for addressing boundary conditions.`
+      },
+      {
+        id: `qc-${Date.now()}-3`,
+        type: 'mcq',
+        question: `Which of the following describes a common exam trap regarding ${topicName}?`,
+        options: [
+          `Neglecting to check boundary values, null states, or edge constraints.`,
+          `Using clear, descriptive variable names.`,
+          `Showing step-by-step derivation on scratch paper.`,
+          `Following standard syntax conventions.`
+        ],
+        correctOptionIndex: 0,
+        explanation: `Examiners intentionally design questions targeting boundary and uninitialized conditions.`
+      }
+    ],
     youtubeClasses: [
       {
         title: `${topicName} Explained (Complete Beginner Guide)`,
@@ -470,42 +666,86 @@ export async function fetchTopicLearning(
         watchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(`${topicName} crash course review`)}`
       }
     ],
-    quickCheckQuestions: [
-      {
-        id: `qc-fallback-1`,
-        question: `What is the primary function or purpose of ${topicName}?`,
-        options: [
-          `To establish verified initialization, state integrity, and predictable execution.`,
-          `To bypass validation requirements under memory pressure.`,
-          `To convert all runtime variables into static constants.`,
-          `To prevent external classes from ever executing.`
-        ],
-        correctOptionIndex: 0,
-        explanation: `The primary objective of ${topicName} is to establish verified initialization and dependable state transitions.`
-      },
-      {
-        id: `qc-fallback-2`,
-        question: `Which of the following is the most frequent trap in exam questions on ${topicName}?`,
-        options: [
-          `Neglecting to check boundary values, null states, or edge constraints.`,
-          `Using clear, descriptive variable names.`,
-          `Showing step-by-step derivation on scratch paper.`,
-          `Following standard syntax conventions.`
-        ],
-        correctOptionIndex: 0,
-        explanation: `Examiners intentionally design trick questions targeting boundary states and uninitialized conditions.`
-      }
+    isSimplerVersion: options.simplerMode || false,
+    // Backwards compatibility wrappers
+    simpleSummary: {
+      whatItIs: isStaticVars
+        ? `A static variable in Java/OOP is a variable declared with the 'static' keyword that belongs to the class itself rather than any individual object instance.`
+        : `${topicName} is a central topic in ${plan.courseName || 'the syllabus'}, essential for mastering upcoming exam problems.`,
+      whatItMeans: isStaticVars
+        ? `No matter how many objects you instantiate, only ONE shared copy of a static variable exists in memory across the entire program execution.`
+        : `Understanding ${topicName} means knowing its foundational rules, execution order, and memory behavior in test scenarios.`,
+      whyItIsUsed: isStaticVars
+        ? `It is used to store common data shared by all instances of a class without wasting heap memory.`
+        : `It establishes structured logic, clean predictability, and prevents high-frequency exam errors.`,
+      howItWorks: isStaticVars
+        ? `Memory for a static variable is allocated in the Method Area / Class Area when the class is first loaded by the JVM.`
+        : `It evaluates input parameters, verifies conditions, and executes unambiguous transformations.`,
+      importantRules: isStaticVars
+        ? [
+            `Declared using the 'static' modifier outside any method.`,
+            `Accessed directly via 'ClassName.variableName' without creating an object instance.`,
+            `Static methods cannot access non-static instance variables or use 'this' or 'super'.`,
+            `Initialized only once when the class is loaded into memory.`
+          ]
+        : [
+            `Always verify initial conditions and variable state.`,
+            `Preserve expected return types and boundary invariants.`,
+            `Handle empty or null states cleanly.`
+          ],
+      syntax: isStaticVars
+        ? `public class Counter {\n    public static int totalCount = 0;\n}`
+        : (isCode ? `// Standard ${topicName} pattern\npublic void execute${topicName.replace(/\s+/g, '')}() {\n    // Implementation\n}` : undefined),
+      documentPoints: [
+        matchingTopic?.reason || `Extracted as a top-priority concept in ${plan.documentTitle || 'your document'}.`,
+        matchingTopic?.keyTakeaway || `Core takeaway: Review definitions and boundary mechanics.`
+      ],
+      simpleExample: isStaticVars
+        ? (options.simplerMode
+            ? `Think of a physical scoreboard in a classroom: there is only ONE scoreboard on the wall. Every student sees the exact same updated number.`
+            : `A Counter class where Counter.totalCount tracks how many User objects have registered across the application.`)
+        : (options.simplerMode
+            ? `Think of ${topicName} like setting up a workspace before starting a job: everything has its designated spot and must be initialized before work begins.`
+            : `A standard implementation demonstrating correct parameter binding and output verification.`),
+      commonExamMistakes: isStaticVars
+        ? [
+            `Attempting to access 'this.myStaticVar' or instance variables inside a static method.`,
+            `Assuming each object instance gets its own independent copy of a static variable.`,
+            `Forgetting that static initialization blocks run once upon class loading.`
+          ]
+        : [
+            `Confusing ${topicName} with closely related adjacent syllabus concepts.`,
+            `Missing edge-case condition checks (e.g. 0, null, or boundaries).`
+          ],
+      shortExamTip: isStaticVars
+        ? `In code-tracing questions, circle static variables in red. Whenever ANY line changes that variable, update your single scratch-paper value for ALL instances!`
+        : `Memorize the standard rubric definition and boundary invariants for maximum points.`
+    },
+    stepByStepExplanation: [
+      { title: 'Prerequisites', explanation: 'Verify input conditions and boundary limits.' },
+      { title: 'Transformation', explanation: 'Apply verified formula or procedural logic.' },
+      { title: 'Verification', explanation: 'Confirm invariants and edge condition handling.' }
     ],
-    isSimplerVersion: options.simplerMode || false
+    example: {
+      title: `Worked Example for ${topicName}`,
+      codeOrMath: isStaticVars ? `public class Counter { public static int count = 0; }` : `Output = f(Input)`,
+      walkthrough: `Follows verified step-by-step logic.`
+    },
+    examPoints: [
+      `State definition accurately in the opening sentence.`,
+      `Highlight distinguishing characteristics.`,
+      `List one concrete edge-case test.`
+    ]
   };
 }
 
 /**
  * Calculate dynamic Topic Understanding Indicator:
- * - quiz performance (accuracy + attempts)
- * - quick-check performance (accuracy + completion)
- * - re-test performance (improvement)
- * - user marked "I Understand" vs "Still Confused"
+ * Status values:
+ * 🟢 Strong Understanding
+ * 🟡 Needs Revision
+ * 🔴 Weak Understanding
+ * Never automatically 100%.
  */
 export function calculateTopicUnderstanding(
   topicName: string,
@@ -520,76 +760,107 @@ export function calculateTopicUnderstanding(
   );
   const quizCount = topicQuizAttempts.length;
   const quizCorrect = topicQuizAttempts.filter(a => a.isCorrect).length;
+  const quizWrong = quizCount - quizCorrect;
   const quizAccuracy = quizCount > 0 ? Math.round((quizCorrect / quizCount) * 100) : undefined;
 
   // 2. Quick check attempts
   const qcList = Object.values(quickCheckAnswers);
   const qcCount = qcList.length;
   const qcCorrect = qcList.filter(a => a.isCorrect).length;
+  const qcWrong = qcCount - qcCorrect;
   const quickCheckAccuracy = qcCount > 0 ? Math.round((qcCorrect / qcCount) * 100) : undefined;
 
+  const questionsAttempted = quizCount + qcCount;
+  const correctAnswers = quizCorrect + qcCorrect;
+  const wrongAnswers = quizWrong + qcWrong;
+
   // Compute calibrated weighted score (0 to 100):
-  // Baseline without attempts: 20%
-  let score = 20;
+  // Baseline without attempts: 30%
+  let score = 30;
 
   // Quick check adds up to 35 points
   if (quickCheckAccuracy !== undefined) {
-    score = 15 + Math.round((quickCheckAccuracy / 100) * 35);
+    score = 20 + Math.round((quickCheckAccuracy / 100) * 35);
   }
 
-  // Quiz / Re-test accuracy adds up to 40 points
+  // Quiz / Re-test accuracy adds up to 35 points
   if (quizAccuracy !== undefined) {
-    const quizWeight = Math.min(1, quizCount / 2); // needs 2 attempts for full weight
-    score = Math.round(score * (1 - 0.4 * quizWeight) + (quizAccuracy * 0.4 * quizWeight));
+    const quizWeight = Math.min(1, quizCount / 2);
+    score = Math.round(score * (1 - 0.35 * quizWeight) + (quizAccuracy * 0.35 * quizWeight));
   }
 
-  // "I Understand" boosts score by +15, "Still Confused" reduces by -20
+  // "I Understand" gives a modest confidence boost (+12), but never pushes to 100% without test performance
   if (userMarkedUnderstood) {
-    score = Math.min(100, score + 18);
+    score = Math.min(88, score + 12);
   } else if (userMarkedConfused) {
-    score = Math.max(10, score - 20);
+    score = Math.max(15, score - 25);
   }
 
-  // Cap score between 5 and 100
-  score = Math.max(5, Math.min(100, score));
-
-  // Determine status and descriptive diagnosis:
-  let status: 'NOT_STARTED' | 'LEARNING' | 'UNDERSTOOD' | 'WEAK' = 'NOT_STARTED';
-  let statusLabel = 'Not Started';
-  let statusColor = 'text-slate-400 bg-slate-800 border-slate-700';
-  let diagnostic = 'Start with the simple summary and step-by-step breakdown.';
-
-  if (userMarkedConfused || (quizAccuracy !== undefined && quizAccuracy < 60) || (quickCheckAccuracy !== undefined && quickCheckAccuracy < 50)) {
-    status = 'WEAK';
-    statusLabel = 'Weak Topic — Needs Cramming';
-    statusColor = 'text-red-400 bg-red-950/80 border-red-500/50';
-    diagnostic = 'Multiple incorrect answers or marked confused. Recommended: watch the YouTube class and try the simpler explanation.';
-  } else if (score >= 85) {
-    status = 'UNDERSTOOD';
-    statusLabel = 'Ready for Exam';
-    statusColor = 'text-emerald-300 bg-emerald-950/80 border-emerald-500/50';
-    diagnostic = 'Consistently strong performance across quick checks and active recall questions.';
-  } else if (score >= 65) {
-    status = 'LEARNING';
-    statusLabel = 'Almost Ready — Review Once More';
-    statusColor = 'text-indigo-300 bg-indigo-950/80 border-indigo-500/50';
-    diagnostic = 'Solid foundation established. One quick re-test will solidify this for full marks.';
+  // Cap score between 10 and 92 (Do NOT automatically mark 100%)
+  if (questionsAttempted >= 4 && (correctAnswers / questionsAttempted) >= 0.95 && userMarkedUnderstood) {
+    score = 95; // Only near 100 if verified with multiple tests
   } else {
-    status = 'LEARNING';
-    statusLabel = 'Learning in Progress';
-    statusColor = 'text-amber-300 bg-amber-950/80 border-amber-500/50';
-    diagnostic = 'Review the step-by-step example and complete the quick check questions.';
+    score = Math.max(10, Math.min(88, score));
+  }
+
+  // Determine status and badges:
+  // 🟢 Strong Understanding
+  // 🟡 Needs Revision
+  // 🔴 Weak Understanding
+  let status: 'STRONG' | 'NEEDS_REVISION' | 'WEAK' = 'NEEDS_REVISION';
+  let statusLabel = 'Needs Revision';
+  let statusBadge = '🟡 Needs Revision';
+  let statusColor = 'text-[#E8D58A] bg-[#E8D58A]/10 border-[#E8D58A]/40';
+  let diagnostic = 'Review the 2-Minute Revision and verify with a quick re-test.';
+  let recommendedRevisionTime = 15;
+
+  const isWeakCondition = userMarkedConfused || 
+    (questionsAttempted > 0 && (correctAnswers / questionsAttempted) < 0.6) || 
+    wrongAnswers >= 2 || 
+    score < 50;
+
+  const isStrongCondition = !userMarkedConfused && 
+    (score >= 75 || (questionsAttempted >= 2 && (correctAnswers / questionsAttempted) >= 0.8)) && 
+    userMarkedUnderstood;
+
+  if (isWeakCondition) {
+    status = 'WEAK';
+    statusLabel = 'Weak Understanding';
+    statusBadge = '🔴 Weak Understanding';
+    statusColor = 'text-[#F29B9B] bg-[#F29B9B]/10 border-[#F29B9B]/40';
+    diagnostic = 'Multiple mistakes detected or marked confused. Priority increased in Rescue Plan with extra study time.';
+    recommendedRevisionTime = 25;
+  } else if (isStrongCondition) {
+    status = 'STRONG';
+    statusLabel = 'Strong Understanding';
+    statusBadge = '🟢 Strong Understanding';
+    statusColor = 'text-[#9FE2B0] bg-[#2F6B4A]/20 border-[#9FE2B0]/40';
+    diagnostic = 'Solid grasp of core concepts, formulas, and common exam questions. Revision time reduced in Rescue Plan.';
+    recommendedRevisionTime = 10;
+  } else {
+    status = 'NEEDS_REVISION';
+    statusLabel = 'Needs Revision';
+    statusBadge = '🟡 Needs Revision';
+    statusColor = 'text-[#E8D58A] bg-[#E8D58A]/10 border-[#E8D58A]/40';
+    diagnostic = 'Foundation is developing. Practice the expected exam questions and complete the Quick Check.';
+    recommendedRevisionTime = 18;
   }
 
   return {
     score,
     status,
     statusLabel,
+    statusBadge,
     statusColor,
     diagnostic,
     quizAccuracy,
     quickCheckAccuracy,
-    userMarkedUnderstood
+    questionsAttempted,
+    correctAnswers,
+    wrongAnswers,
+    recommendedRevisionTime,
+    userMarkedUnderstood,
+    userMarkedConfused
   };
 }
 
