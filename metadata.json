@@ -1,0 +1,6 @@
+{
+  "name": "Exam Rescue AI",
+  "description": "AI-powered emergency study planner for students who have an exam soon.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
